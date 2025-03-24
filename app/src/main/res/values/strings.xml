@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Weather-App</string>
+    <string name="title_activity_splash">SplashActivity</string>
+    <string name="menu_icon">menu icon</string>
+    <string name="search_icon">search icon</string>
+    <string name="berlin_germany">Berlin, Germany</string>
+    <string name="location_icon">location icon</string>
+    <string name="back_icon">back icon</string>
+    <string name="weather_condition">weather condition</string>
+    <string name="forecast">Forecast</string>
+</resources>
