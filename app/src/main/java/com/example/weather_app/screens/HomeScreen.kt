@@ -46,19 +46,11 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun HomeScreen(drawerState: DrawerState, scope: CoroutineScope, onSearchClick: () -> Unit) {
+fun HomeScreen() {
     Scaffold(
         topBar = {
             WeatherTopAppBar(
                 titleResId = R.string.berlin_germany,
-                shouldDisplayMenuIcon = true,
-                shouldDisplaySearchIcon = true,
-                onSideMenuClick = {
-                    scope.launch {
-                        drawerState.open()
-                    }
-                },
-                onSearchClick = onSearchClick
             )
         },
 

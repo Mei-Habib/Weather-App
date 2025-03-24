@@ -57,8 +57,6 @@ fun DetailsScreen() {
                 titleResId = R.string.berlin_germany,
                 titleContentColor = Color.White,
                 iconTint = Color.White,
-                shouldDisplayMenuIcon = false,
-                shouldDisplaySearchIcon = false,
                 onBackClick = {
                     // pop
                 }

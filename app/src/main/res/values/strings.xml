@@ -8,4 +8,10 @@
     <string name="back_icon">back icon</string>
     <string name="weather_condition">weather condition</string>
     <string name="forecast">Forecast</string>
+    <string name="units">Units</string>
+    <string name="weather">Weather</string>
+    <string name="wind_speed">Wind Speed</string>
+    <string name="location">Location</string>
+    <string name="language">Language</string>
+    <string name="settings">Settings</string>
 </resources>

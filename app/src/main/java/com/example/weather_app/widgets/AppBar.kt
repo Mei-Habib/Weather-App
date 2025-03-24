@@ -31,26 +31,16 @@ fun WeatherTopAppBar(
     titleString: String = "",
     titleContentColor: Color = Dark,
     iconTint: Color = Dark,
-    shouldDisplaySearchIcon: Boolean,
-    shouldDisplayMenuIcon: Boolean,
-    onSideMenuClick: (() -> Unit)? = null,
-    onSearchClick: (() -> Unit)? = null,
     onBackClick: (() -> Unit)? = null
 ) {
     CenterAlignedTopAppBar(
 
         navigationIcon = {
-            if (shouldDisplayMenuIcon) {
-                AppBarIconButton(R.drawable.ic_menu, iconTint, R.string.menu_icon) {
-                    if (onSideMenuClick != null)
-                        onSideMenuClick()
+            AppBarIconButton(R.drawable.ic_back, iconTint, R.string.back_icon) {
+                if (onBackClick != null) {
+                    onBackClick()
                 }
-            } else
-                AppBarIconButton(R.drawable.ic_back, iconTint, R.string.back_icon) {
-                    if (onBackClick != null) {
-                        onBackClick()
-                    }
-                }
+            }
         },
 
         title = {
@@ -70,29 +60,11 @@ fun WeatherTopAppBar(
             containerColor = Color.Transparent,
             titleContentColor = titleContentColor
         ),
-
-        actions = {
-            if (shouldDisplaySearchIcon)
-                AppBarIconButton(
-                    R.drawable.ic_search,
-                    iconTint,
-                    R.string.search_icon
-                ) {
-                    if (onSearchClick != null)
-                        onSearchClick()
-                }
-            else
-                Spacer(
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(25.dp)
-                )
-        }
     )
 }
 
 @Composable
-fun AppBarIconButton(icon: Int, tint : Color, contentDescription: Int, onClick: () -> Unit) {
+fun AppBarIconButton(icon: Int, tint: Color, contentDescription: Int, onClick: () -> Unit) {
     Icon(
         painter = painterResource(icon),
         contentDescription = stringResource(contentDescription),
@@ -111,8 +83,6 @@ fun AppBarIconButton(icon: Int, tint : Color, contentDescription: Int, onClick: 
 fun WeatherTopAppBarPreview() {
     WeatherTopAppBar(
         R.string.berlin_germany,
-        shouldDisplayMenuIcon = true,
-        shouldDisplaySearchIcon = true
     ) {
 
     }
