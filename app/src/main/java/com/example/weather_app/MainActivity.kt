@@ -21,7 +21,7 @@ import com.example.weather_app.screens.AlertsScreen
 import com.example.weather_app.screens.DetailsScreen
 import com.example.weather_app.screens.LocationScreen
 import com.example.weather_app.screens.SettingsScreen
-import com.example.weather_app.views.BottomNavBar
+import com.example.weather_app.widgets.BottomNavBar
 
 class MainActivity : ComponentActivity() {
 
@@ -42,10 +42,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(navController: NavHostController) {
-    val isNavBarVisible = BottomNavBar.mutableNavBarState.observeAsState()
+    val isBottomNavBarVisible = BottomNavBar.mutableNavBarState.observeAsState()
+
     Scaffold(
         bottomBar = {
-            when (isNavBarVisible.value) {
+            when (isBottomNavBarVisible.value) {
                 true -> BottomNavBar.ShowBottomNavBar(navController)
                 false -> {}
                 null -> {}
@@ -63,7 +64,7 @@ fun MainScreen(navController: NavHostController) {
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {
-                    LocationScreen()
+                    LocationScreen(navController)
                 }
 
                 composable<NavigationRoutes.AlertsRoute> {

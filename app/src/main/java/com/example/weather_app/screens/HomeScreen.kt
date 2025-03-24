@@ -41,9 +41,6 @@ import com.example.weather_app.ui.theme.BabyBlue
 import com.example.weather_app.ui.theme.Blue
 import com.example.weather_app.ui.theme.Grey
 import com.example.weather_app.widgets.WeatherTopAppBar
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-
 
 @Composable
 fun HomeScreen() {
