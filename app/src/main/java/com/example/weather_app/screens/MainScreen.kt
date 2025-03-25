@@ -37,7 +37,7 @@
 //import kotlin.math.roundToInt
 //
 //@Composable
-//fun MainScreen() {
+//fun com.example.weather_app.com.example.weather_app.MainScreen() {
 //    val configuration = LocalConfiguration.current
 //    val density = LocalDensity.current.density
 //

@@ -15,14 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,9 +36,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weather_app.R
-import com.example.weather_app.data.model.DailyForecastItem
-import com.example.weather_app.data.model.HourlyForecastItem
-import com.example.weather_app.data.model.WeatherDetails
+import com.example.weather_app.models.DailyForecastItem
+import com.example.weather_app.models.HourlyForecastItem
 import com.example.weather_app.ui.theme.BabyBlue
 import com.example.weather_app.ui.theme.Blue
 import com.example.weather_app.ui.theme.Dark
@@ -80,13 +76,27 @@ fun DetailsScreen() {
                     .height(350.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = painterResource(R.drawable.partly_cloudy),
-                        contentDescription = stringResource(R.string.weather_condition),
+
+                    Row(
                         Modifier
-                            .padding(top = paddingValues.calculateTopPadding())
-                            .size(80.dp)
-                    )
+                            .padding(top = paddingValues.calculateTopPadding()),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "13°",
+                            color = Color.White,
+                            fontFamily = FontFamily(Font(R.font.poppins_bold)),
+                            fontSize = 36.sp
+                        )
+
+                        Image(
+                            painter = painterResource(R.drawable.partly_cloudy),
+                            contentDescription = stringResource(R.string.weather_condition),
+                            Modifier
+                                .size(60.dp)
+                        )
+
+                    }
 
                     Text(
                         text = "Partly Cloudy",
@@ -208,7 +218,7 @@ fun HourlyWeatherForecast(forecastItem: HourlyForecastItem) {
 fun DailyWeatherForecast(dailyForecastItem: DailyForecastItem) {
     Row(
         modifier = Modifier
-            .padding(bottom = 25.dp)
+            .padding(bottom = 16.dp)
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,

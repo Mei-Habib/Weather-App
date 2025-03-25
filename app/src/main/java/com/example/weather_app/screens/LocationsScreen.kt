@@ -39,7 +39,7 @@ import com.example.weather_app.widgets.WeatherFloatingActionButton
 import com.example.weather_app.widgets.WeatherTopAppBar
 
 @Composable
-fun LocationScreen(navController: NavHostController) {
+fun LocationScreen() {
     val locations = listOf("Liverpool, United Kingdom", "Alexandria, Egypt", "Tokyo, Japan")
     Scaffold(
         topBar = {
@@ -48,7 +48,7 @@ fun LocationScreen(navController: NavHostController) {
                 titleContentColor = Dark,
                 iconTint = Dark,
             ) {
-                navController.popBackStack()
+                
             }
         },
 
