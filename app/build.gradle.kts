@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.espresso.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -113,9 +114,10 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.7.1")
 
     //Room Database
-    implementation("androidx.room:room-runtime:2.5.2")
-    kapt("androidx.room:room-compiler:2.5.2")
-    implementation("androidx.room:room-ktx:2.5.2")
+    implementation("androidx.room:room-ktx:2.6.1")
+    implementation("androidx.room:room-runtime:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+
 
     //LiveData & Compose
     val compose_version = "1.0.0"
@@ -144,8 +146,4 @@ dependencies {
 //    ksp("androidx.room:room-compiler:2.6.1")
 
 
-}
-
-kapt {
-    correctErrorTypes = true
 }

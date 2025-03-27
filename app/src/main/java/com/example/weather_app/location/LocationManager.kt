@@ -59,6 +59,7 @@ class LocationManager(private val context: Context) {
                     locationResult.lastLocation?.let {
                         onLocationReceived(it)
                     }
+                    fusedClient.removeLocationUpdates(this)
                 }
             },
             Looper.getMainLooper()

@@ -17,4 +17,5 @@
     <string name="saved_locations">Saved Locations</string>
     <string name="fab">fab</string>
     <string name="search">Search</string>
+    <string name="weather_icon">Weather Icon</string>
 </resources>

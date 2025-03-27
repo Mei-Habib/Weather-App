@@ -16,21 +16,30 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.weather_app.data.local.WeatherDatabase
+import com.example.weather_app.data.local.WeatherLocalDataSource
+import com.example.weather_app.data.remote.RetrofitHelper
+import com.example.weather_app.data.remote.WeatherRemoteDataSource
 import com.example.weather_app.location.LocationManager
 import com.example.weather_app.models.NavigationRoutes
+import com.example.weather_app.repository.WeatherRepository
 import com.example.weather_app.screens.AlertsScreen
-import com.example.weather_app.screens.DetailsScreen
+import com.example.weather_app.screens.details.DetailsScreen
 import com.example.weather_app.screens.LocationScreen
 import com.example.weather_app.screens.SettingsScreen
+import com.example.weather_app.screens.details.DetailsFactory
+import com.example.weather_app.screens.details.DetailsViewModel
 import com.example.weather_app.widgets.BottomNavBar
 
 class MainActivity : ComponentActivity() {
@@ -44,10 +53,21 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         setContent {
+
+            val detailsFactory = DetailsFactory(
+                WeatherRepository.getInstance(
+                    WeatherRemoteDataSource(
+                        RetrofitHelper.apiServices
+                    ), WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
+                ), locationManager
+            )
+
+            val viewModel =
+                ViewModelProvider.create(this, detailsFactory).get(DetailsViewModel::class.java)
             currentLocationState =
                 remember { mutableStateOf(Location(android.location.LocationManager.GPS_PROVIDER)) }
             val navController = rememberNavController()
-            MainScreen(navController)
+            MainScreen(viewModel, navController)
 
         }
     }
@@ -118,7 +138,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(navController: NavHostController) {
+fun MainScreen(viewModel: DetailsViewModel, navController: NavHostController) {
     val isBottomNavBarVisible = BottomNavBar.mutableNavBarState.observeAsState()
 
     Scaffold(
@@ -137,7 +157,7 @@ fun MainScreen(navController: NavHostController) {
         ) {
             NavHost(navController = navController, startDestination = NavigationRoutes.HomeRoute) {
                 composable<NavigationRoutes.HomeRoute> {
-                    DetailsScreen()
+                    DetailsScreen(viewModel)
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {

@@ -1,4 +1,4 @@
-package com.example.weather_app.data
+package com.example.weather_app.data.remote
 
 import com.example.weather_app.utils.Constants
 import okhttp3.OkHttpClient

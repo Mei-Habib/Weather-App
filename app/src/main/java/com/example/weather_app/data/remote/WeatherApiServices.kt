@@ -1,9 +1,10 @@
-package com.example.weather_app.data
+package com.example.weather_app.data.remote
 
 import com.example.weather_app.models.ForecastResponse
 import com.example.weather_app.models.WeatherResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
+import retrofit2.Response
 
 interface WeatherApiServices {
 

@@ -14,7 +14,7 @@ data class WeatherResponse(
     val visibility: Int,
     val weather: List<Weather>,
     val wind: Wind
-){
+) {
     data class Clouds(
         val all: Int
     )

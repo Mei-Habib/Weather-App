@@ -4,7 +4,7 @@ data class ForecastResponse(
     val city: City,
     val cnt: Int,
     val cod: String,
-    val list: List<Item0>,
+    val list: List<Item>,
     val message: Int
 ){
     data class City(
@@ -18,7 +18,7 @@ data class ForecastResponse(
         val timezone: Int
     )
 
-    data class Item0(
+    data class Item(
         val clouds: Clouds,
         val dt: Int,
         val dt_txt: String,
