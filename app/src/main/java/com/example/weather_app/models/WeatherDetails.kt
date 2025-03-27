@@ -1,14 +1,6 @@
 package com.example.weather_app.models
 
 data class WeatherDetails(
-    val temp: String,
-    val humidity: String,
-    val windSpeed: String,
-    val uv: String,
-    val pressure: String,
-    val clouds: String
-) {
-    companion object {
-        val weatherDetails = WeatherDetails("13", "62", "8", "0", "1027", "100")
-    }
-}
+    val weather: WeatherResponse,
+    val forecast: ForecastResponse
+)

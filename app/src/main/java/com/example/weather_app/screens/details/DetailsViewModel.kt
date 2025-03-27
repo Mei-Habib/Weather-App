@@ -7,8 +7,12 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weather_app.data.remote.Response
 import com.example.weather_app.location.LocationManager
+import com.example.weather_app.models.ForecastResponse
+import com.example.weather_app.models.WeatherDetails
+import com.example.weather_app.models.WeatherResponse
 import com.example.weather_app.repository.WeatherRepository
 import kotlinx.coroutines.launch
 
@@ -20,8 +24,12 @@ class DetailsViewModel(
     private val _location = MutableLiveData<Location>()
     val location: LiveData<Location> = _location
 
-    private var _weatherData = MutableLiveData<Response>(Response.Loading)
-    val weatherData: LiveData<Response> = _weatherData
+    private var _weatherData = MutableLiveData<Response<WeatherDetails>>(Response.Loading)
+    val weatherData: LiveData<Response<WeatherDetails>> = _weatherData
+
+//    private var _forecastData = MutableLiveData<Response<ForecastResponse>>(Response.Loading)
+//    val forecast: LiveData<Response<ForecastResponse>> = _forecastData
+
 
     private val _message = MutableLiveData("")
     val message = _message.value
@@ -34,22 +42,25 @@ class DetailsViewModel(
         locationManager.getCurrentLocation { loc ->
             _location.postValue(loc)
             Log.i("TAG", "Location [lon: ${loc.longitude}, lat: ${loc.latitude}]")
-            getCurrentWeather(loc.latitude, loc.longitude)
+            getWeatherDetails(loc.latitude, loc.longitude)
+//            getForecast(loc.latitude, loc.longitude)
         }
     }
 
-    fun getCurrentWeather(lat: Double, lon: Double) {
+    fun getWeatherDetails(lat: Double, lon: Double) {
         viewModelScope.launch {
             try {
-                val response = repository.getCurrentWeather(lat, lon, "metric", "en")
-                _weatherData.postValue(Response.Success(response))
+                val weatherResponse = repository.getCurrentWeather(lat, lon, "metric", "en")
+                val forecastResponse = repository.getForecast(lat, lon, "metric", "en")
+                val weatherDetails = WeatherDetails(weatherResponse, forecastResponse)
+                _weatherData.postValue(Response.Success(weatherDetails))
             } catch (e: Exception) {
                 _message.postValue(e.message)
+                _weatherData.postValue(Response.Failure(e))
             }
 
         }
     }
-
 }
 
 class DetailsFactory(

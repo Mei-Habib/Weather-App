@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -29,55 +30,63 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import com.bumptech.glide.integration.compose.GlideImage
 import com.example.weather_app.R
 import com.example.weather_app.data.remote.Response
 import com.example.weather_app.models.DailyForecastItem
-import com.example.weather_app.models.HourlyForecastItem
-import com.example.weather_app.models.WeatherResponse
+import com.example.weather_app.models.ForecastResponse
+import com.example.weather_app.models.WeatherDetails
 import com.example.weather_app.ui.theme.BabyBlue
 import com.example.weather_app.ui.theme.Blue
 import com.example.weather_app.ui.theme.Dark
 import com.example.weather_app.ui.theme.DarkGrey
 import com.example.weather_app.ui.theme.Grey
-import com.example.weather_app.utils.formatUnixTimestamp
+import com.example.weather_app.utils.IconsMapper
+import com.example.weather_app.utils.getDayFormTimestamp
+import com.example.weather_app.utils.getDayFromTimestamp
+import com.example.weather_app.utils.getDaysForecast
+import com.example.weather_app.utils.getHourFormTime
 import com.example.weather_app.widgets.WeatherTopAppBar
+import java.util.TimeZone
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun DetailsScreen(viewModel: DetailsViewModel) {
+fun DetailsScreen(viewModel: DetailsViewModel, currentTitle: MutableState<String>) {
     val locationState = viewModel.location.observeAsState()
-    val weatherState = viewModel.weatherData.observeAsState()
+    val weatherDetailsState = viewModel.weatherData.observeAsState()
 
-    LaunchedEffect(locationState) {
-        locationState.value?.let { loc ->
-            viewModel.getCurrentWeather(loc.latitude, loc.longitude)
+    LaunchedEffect(weatherDetailsState.value) {
+        if (weatherDetailsState.value is Response.Success) {
+            val weather = (weatherDetailsState.value as Response.Success).response
+            currentTitle.value = weather.weather.name
         }
     }
 
-    Log.i("TAG", "DetailsScreen: ${weatherState.value}")
+    LaunchedEffect(locationState) {
+        locationState.value?.let { loc ->
+            viewModel.getWeatherDetails(loc.latitude, loc.longitude)
+        }
+    }
+
+    Log.i("TAG", "DetailsScreen: ${weatherDetailsState.value}")
     Scaffold(
         topBar = {
             WeatherTopAppBar(
-                titleResId = R.string.berlin_germany,
+                titleString = currentTitle.value,
                 titleContentColor = Color.White,
                 iconTint = Color.White,
                 onBackClick = {
@@ -88,15 +97,15 @@ fun DetailsScreen(viewModel: DetailsViewModel) {
 
         containerColor = Grey
     ) { paddingValues ->
-        WeatherContent(weatherState.value, paddingValues)
+        WeatherContent(weatherDetailsState.value, paddingValues)
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
-    when (weatherState) {
+fun WeatherContent(weatherDetailsState: Response<WeatherDetails>?, paddingValues: PaddingValues) {
+
+    when (weatherDetailsState) {
         is Response.Loading -> {
             Box(
                 Modifier.fillMaxSize(),
@@ -112,7 +121,7 @@ fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Error: ${weatherState.err.message}",
+                    text = "Error: ${weatherDetailsState.err.message}",
                     color = Color.Red,
                     fontSize = 18.sp
                 )
@@ -120,14 +129,12 @@ fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
         }
 
         is Response.Success -> {
-            val weather = weatherState.response
+            val weatherDetails = weatherDetailsState.response
             val brush = Brush.verticalGradient(listOf(Blue, BabyBlue))
-            val iconCode = weather.weather.firstOrNull()?.icon
-            val iconUrl = "https://openweathermap.org/img/wn/${iconCode}@2x.png"
-            // Convert Unix timestamp (dt) to readable date
-            val timestamp = weather.dt
-            val timezoneOffset = weather.timezone // Offset in seconds
-            val formattedDate = formatUnixTimestamp(timestamp, timezoneOffset)
+            val timestamp = weatherDetails.weather.dt
+            val timezoneOffset = weatherDetails.weather.timezone
+            val formattedDate = getDayFromTimestamp(timestamp, timezoneOffset)
+
 
             Box(
                 Modifier
@@ -150,14 +157,17 @@ fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "${weather.main.temp}°",
+                                text = "${weatherDetails.weather.main.temp.toInt()}°",
                                 color = Color.White,
                                 fontFamily = FontFamily(Font(R.font.poppins_bold)),
                                 fontSize = 36.sp
                             )
 
-                            GlideImage(
-                                model = iconUrl,
+                            Image(
+                                painter = painterResource(
+                                    IconsMapper.iconsMap.get(weatherDetails.weather.weather.firstOrNull()?.icon)
+                                        ?: R.drawable.clear_sky_day
+                                ),
                                 contentDescription = stringResource(R.string.weather_icon),
                                 modifier = Modifier.size(60.dp)
                             )
@@ -165,7 +175,7 @@ fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
                         }
 
                         Text(
-                            text = "${weather.weather.firstOrNull()?.description}",
+                            text = "${weatherDetails.weather.weather.firstOrNull()?.description}",
                             color = Color.White,
                             fontFamily = FontFamily(Font(R.font.poppins_bold)),
                             fontSize = 24.sp
@@ -197,11 +207,13 @@ fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+//                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(HourlyForecastItem.forecast.size) {
-                            HourlyWeatherForecast(HourlyForecastItem.forecast[it])
+                        val map = weatherDetails.forecast.getDaysForecast()
+                        val firstDayForecastList = map.values.firstOrNull() ?: emptyList()
+                        items(firstDayForecastList) { forecastItem ->
+                            HourlyWeatherForecast(forecastItem)
                         }
 
                     }
@@ -228,11 +240,13 @@ fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(24.dp),
-                        verticalArrangement = Arrangement.SpaceBetween,
+                        verticalArrangement = Arrangement.SpaceEvenly,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        items(DailyForecastItem.weatherData.size) {
-                            DailyWeatherForecast(DailyForecastItem.weatherData[it])
+
+                        val map = weatherDetails.forecast.getDaysForecast()
+                        items(map.entries.toList()) { (_, list) ->
+                            DailyWeatherForecast(list)
                         }
                     }
                 }
@@ -245,7 +259,7 @@ fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
                     modifier = Modifier.padding(top = 860.dp, start = 20.dp)
                 )
 
-                WeatherDashboard()
+                WeatherDashboard(weatherDetails)
             }
         }
 
@@ -254,38 +268,54 @@ fun WeatherContent(weatherState: Response?, paddingValues: PaddingValues) {
 
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun HourlyWeatherForecast(forecastItem: HourlyForecastItem) {
+fun HourlyWeatherForecast(forecastItem: ForecastResponse.Item) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(end = 24.dp)
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(end = 16.dp)
     ) {
         Text(
-            text = forecastItem.time,
+            text = getHourFormTime(forecastItem.dt.toLong()),
             color = DarkGrey,
-            fontFamily = FontFamily(Font(R.font.poppins_light)),
-            fontSize = 12.sp
+            fontFamily = FontFamily(Font(R.font.poppins_medium)),
+            fontSize = 14.sp
         )
 
         Image(
-            painter = painterResource(forecastItem.icon),
-            contentDescription = "weather icon",
-            modifier = Modifier
-                .padding(8.dp)
-                .size(28.dp)
+            painter = painterResource(
+                IconsMapper.iconsMap.get(forecastItem.weather.get(0).icon)
+                    ?: R.drawable.clear_sky_day
+            ),
+            contentDescription = "Sunset",
+            modifier = Modifier.size(48.dp)
         )
 
         Text(
-            text = forecastItem.temp,
+            text = "${forecastItem.main.temp.toInt()}",
             color = Dark,
             fontFamily = FontFamily(Font(R.font.poppins_regular)),
-            fontSize = 14.sp
+            fontSize = 16.sp
         )
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun DailyWeatherForecast(dailyForecastItem: DailyForecastItem) {
+fun DailyWeatherForecast(dailyList: List<ForecastResponse.Item>) {
+    val context = LocalContext.current
+    val date = getDayFormTimestamp(dailyList.get(0).dt, context)
+    val icon = dailyList.first().weather.get(0).icon
+
+    var min = dailyList.get(0).main.temp_min.toInt()
+    var max = dailyList.get(0).main.temp_max.toInt()
+
+
+    for (item in dailyList) {
+        min = Math.min(item.main.temp_min.toInt(), min)
+        max = Math.max(item.main.temp_max.toInt(), max)
+    }
     Row(
         modifier = Modifier
             .padding(bottom = 16.dp)
@@ -296,7 +326,10 @@ fun DailyWeatherForecast(dailyForecastItem: DailyForecastItem) {
         ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
-                painter = painterResource(dailyForecastItem.icon),
+                painter = painterResource(
+                    IconsMapper.iconsMap.get(icon)
+                        ?: R.drawable.clear_sky_day
+                ),
                 contentDescription = "condition icon",
                 modifier = Modifier
                     .padding(end = 17.dp)
@@ -305,7 +338,7 @@ fun DailyWeatherForecast(dailyForecastItem: DailyForecastItem) {
             )
 
             Text(
-                text = dailyForecastItem.day,
+                text = date,
                 color = Dark,
                 fontFamily = FontFamily(Font(R.font.poppins_regular)),
                 fontSize = 14.sp
@@ -313,7 +346,7 @@ fun DailyWeatherForecast(dailyForecastItem: DailyForecastItem) {
         }
 
         Text(
-            text = "${dailyForecastItem.highTemp}°/ ${dailyForecastItem.lowTemp}°",
+            text = "$max°/ $min°",
             fontFamily = FontFamily(Font(R.font.poppins_regular)),
             fontSize = 14.sp
         )
@@ -322,27 +355,60 @@ fun DailyWeatherForecast(dailyForecastItem: DailyForecastItem) {
 }
 
 @Composable
-fun WeatherDashboard() {
-    Row(
+fun WeatherDashboard(weatherDetails: WeatherDetails) {
+
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 890.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+            .fillMaxSize()
+            .padding(top = 880.dp, start = 16.dp, end = 16.dp, bottom = 80.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            WeatherCard(drawable = R.drawable.ic_temp, value = "72°", unit = "Fahrenheit")
-            WeatherCard(drawable = R.drawable.ic_windy, value = "0.2", unit = "UV Index")
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            WeatherCard(
+                icon = R.drawable.ic_thermometer,
+                value = "${weatherDetails.weather.main.feels_like.toInt()}°",
+                unit = stringResource(R.string.feels_like)
+            )
+            WeatherCard(
+                icon = R.drawable.ic_wind,
+                value = "${weatherDetails.weather.wind.speed} mp/h",
+                unit = stringResource(R.string.wind_speed)
+            )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            WeatherCard(drawable = R.drawable.ic_sunny, value = "134 mp/h", unit = "Pressure")
-            WeatherCard(drawable = R.drawable.ic_humidity, value = "48%", unit = "Humidity")
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            WeatherCard(icon = R.drawable.ic_sun, value = "9", unit = "UV Index")
+            WeatherCard(
+                icon = R.drawable.ic_humidity,
+                value = "${weatherDetails.weather.main.humidity}%",
+                unit = stringResource(
+                    R.string.humidity
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            WeatherCard(
+                icon = R.drawable.ic_sun,
+                value = "${weatherDetails.weather.clouds.all}",
+                unit = "Clouds"
+            )
+            WeatherCard(
+                icon = R.drawable.ic_humidity,
+                value = "${weatherDetails.weather.main.humidity}%",
+                unit = stringResource(
+                    R.string.humidity
+                )
+            )
         }
     }
 }
 
 
 @Composable
-fun WeatherCard(drawable: Int, value: String, unit: String) {
+fun WeatherCard(icon: Int, value: String, unit: String) {
     Card(
         modifier = Modifier
             .size(width = 160.dp, height = 100.dp)
@@ -356,23 +422,25 @@ fun WeatherCard(drawable: Int, value: String, unit: String) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(drawable),
+                painter = painterResource(icon),
                 contentDescription = "feels like",
                 modifier = Modifier.size(40.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "$value°",
-                    fontFamily = FontFamily(Font(R.font.poppins_medium)),
-                    fontSize = 16.sp,
-                    color = Dark
-                )
-                Text(
                     text = unit,
                     fontFamily = FontFamily(Font(R.font.poppins_regular)),
                     fontSize = 12.sp,
-                    color = Grey
+                    color = Color.Gray,
+                )
+
+                Text(
+                    text = "$value",
+                    fontFamily = FontFamily(Font(R.font.poppins_medium)),
+                    fontSize = 16.sp,
+                    color = Dark,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
 

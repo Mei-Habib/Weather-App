@@ -18,4 +18,9 @@
     <string name="fab">fab</string>
     <string name="search">Search</string>
     <string name="weather_icon">Weather Icon</string>
+    <string name="humidity">Humidity</string>
+    <string name="pressure">Pressure</string>
+    <string name="feels_like">Feels Like</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
 </resources>

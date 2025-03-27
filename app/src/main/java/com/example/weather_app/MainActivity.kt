@@ -5,6 +5,7 @@ import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.app.AlertDialog
 import android.graphics.Color
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -12,6 +13,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Scaffold
@@ -45,6 +47,8 @@ import com.example.weather_app.widgets.BottomNavBar
 class MainActivity : ComponentActivity() {
     private lateinit var locationManager: LocationManager
     private lateinit var currentLocationState: MutableState<Location>
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         locationManager = LocationManager(this)
@@ -137,11 +141,27 @@ class MainActivity : ComponentActivity() {
         }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(viewModel: DetailsViewModel, navController: NavHostController) {
     val isBottomNavBarVisible = BottomNavBar.mutableNavBarState.observeAsState()
+    val currentTitle = remember { mutableStateOf("") }
+//
+//    // Observe navigation changes and update the title accordingly
+//    LaunchedEffect(navController) {
+//        navController.addOnDestinationChangedListener { _, destination, _ ->
+//            currentTitle.value = when (destination.route) {
+//                NavigationRoutes.HomeRoute.route -> "Home"
+//                NavigationRoutes.LocationsRoute -> "Locations"
+//                NavigationRoutes.AlertsRoute -> "Alerts"
+//                NavigationRoutes.SettingsRoute -> "Settings"
+//                else -> "Weather App"
+//            }
+//        }
+//    }
 
     Scaffold(
+
         bottomBar = {
             when (isBottomNavBarVisible.value) {
                 true -> BottomNavBar.ShowBottomNavBar(navController)
@@ -157,7 +177,7 @@ fun MainScreen(viewModel: DetailsViewModel, navController: NavHostController) {
         ) {
             NavHost(navController = navController, startDestination = NavigationRoutes.HomeRoute) {
                 composable<NavigationRoutes.HomeRoute> {
-                    DetailsScreen(viewModel)
+                    DetailsScreen(viewModel, currentTitle)
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {
