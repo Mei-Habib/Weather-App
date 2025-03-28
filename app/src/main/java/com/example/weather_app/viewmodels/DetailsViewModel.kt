@@ -1,4 +1,4 @@
-package com.example.weather_app.screens.details
+package com.example.weather_app.viewmodels
 
 import android.location.Location
 import android.util.Log
@@ -7,12 +7,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weather_app.data.remote.Response
 import com.example.weather_app.location.LocationManager
-import com.example.weather_app.models.ForecastResponse
 import com.example.weather_app.models.WeatherDetails
-import com.example.weather_app.models.WeatherResponse
 import com.example.weather_app.repository.WeatherRepository
 import kotlinx.coroutines.launch
 

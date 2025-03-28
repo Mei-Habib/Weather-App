@@ -18,9 +18,10 @@ android {
     namespace = "com.example.weather_app"
     compileSdk = 35
 
-    val file = rootProject.file("local.properties")
-    val properties = Properties()
-    properties.load(FileInputStream(file))
+//    val file = File(rootProject.rootDir, "apikey.properties")
+//    val properties = Properties()
+//    properties.load(FileInputStream(file))
+
 
     defaultConfig {
         applicationId = "com.example.weather_app"
@@ -33,7 +34,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-//        buildConfigField("String", "API_KEY", properties.getProperty("API_KEY"))
+
+//        buildConfigField("String", "MAP_API_KEY", properties.getProperty("MAP_API_KEY"))
     }
 
     buildTypes {
@@ -43,6 +45,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+
+        debug {
+//            buildConfigField("String", "MAP_API_KEY", properties.getProperty("MAP_API_KEY"))
         }
     }
 
@@ -130,12 +136,13 @@ dependencies {
     implementation("com.airbnb.android:lottie-compose:6.1.0")
 
 
-    // google maps places
-    implementation("com.google.android.libraries.places:places:3.1.0")
+    // Google maps Compose
+    implementation(libs.maps.compose)
 
-    // locations & map
-    implementation("com.google.android.gms:play-services-location:21.3.0")
-    implementation("com.google.maps.android:maps-compose:6.4.1")
+    // Google Maps SDK for Android
+    implementation(libs.places)
+    implementation(libs.play.services.location)
+    implementation(libs.play.services.maps)
 
     //workManger
     implementation("androidx.work:work-runtime:2.9.0")

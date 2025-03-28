@@ -39,7 +39,7 @@ import com.example.weather_app.widgets.WeatherFloatingActionButton
 import com.example.weather_app.widgets.WeatherTopAppBar
 
 @Composable
-fun LocationScreen() {
+fun LocationScreen(action: () -> Unit) {
     val locations = listOf("Liverpool, United Kingdom", "Alexandria, Egypt", "Tokyo, Japan")
     Scaffold(
         topBar = {
@@ -48,12 +48,12 @@ fun LocationScreen() {
                 titleContentColor = Dark,
                 iconTint = Dark,
             ) {
-                
+
             }
         },
 
         floatingActionButton = {
-            WeatherFloatingActionButton {}
+            WeatherFloatingActionButton(action)
         },
 
         containerColor = Grey

@@ -18,7 +18,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -37,12 +36,16 @@ import com.example.weather_app.location.LocationManager
 import com.example.weather_app.models.NavigationRoutes
 import com.example.weather_app.repository.WeatherRepository
 import com.example.weather_app.screens.AlertsScreen
-import com.example.weather_app.screens.details.DetailsScreen
+import com.example.weather_app.screens.DetailsScreen
 import com.example.weather_app.screens.LocationScreen
+import com.example.weather_app.screens.MapScreen
 import com.example.weather_app.screens.SettingsScreen
-import com.example.weather_app.screens.details.DetailsFactory
-import com.example.weather_app.screens.details.DetailsViewModel
+import com.example.weather_app.utils.ManifestUtils
+import com.example.weather_app.viewmodels.DetailsFactory
+import com.example.weather_app.viewmodels.DetailsViewModel
+import com.example.weather_app.viewmodels.MapViewModel
 import com.example.weather_app.widgets.BottomNavBar
+import com.google.android.libraries.places.api.Places
 
 class MainActivity : ComponentActivity() {
     private lateinit var locationManager: LocationManager
@@ -52,6 +55,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         locationManager = LocationManager(this)
+
+        val apiKey = ManifestUtils.getApiKeyFromManifest(this)
+        if (!Places.isInitialized() && apiKey != null) {
+            Places.initialize(applicationContext, apiKey)
+        }
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
@@ -66,12 +74,14 @@ class MainActivity : ComponentActivity() {
                 ), locationManager
             )
 
-            val viewModel =
+            val detailsViewModel =
                 ViewModelProvider.create(this, detailsFactory).get(DetailsViewModel::class.java)
+            val mapViewModel =
+                ViewModelProvider.create(this).get(MapViewModel::class.java)
             currentLocationState =
                 remember { mutableStateOf(Location(android.location.LocationManager.GPS_PROVIDER)) }
             val navController = rememberNavController()
-            MainScreen(viewModel, navController)
+            MainScreen(detailsViewModel, mapViewModel, navController)
 
         }
     }
@@ -143,7 +153,11 @@ class MainActivity : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(viewModel: DetailsViewModel, navController: NavHostController) {
+fun MainScreen(
+    viewModel: DetailsViewModel,
+    mapViewModel: MapViewModel,
+    navController: NavHostController
+) {
     val isBottomNavBarVisible = BottomNavBar.mutableNavBarState.observeAsState()
     val currentTitle = remember { mutableStateOf("") }
 //
@@ -181,7 +195,7 @@ fun MainScreen(viewModel: DetailsViewModel, navController: NavHostController) {
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {
-                    LocationScreen()
+                    LocationScreen { navController.navigate(NavigationRoutes.SearchRoute) }
                 }
 
                 composable<NavigationRoutes.AlertsRoute> {
@@ -190,6 +204,12 @@ fun MainScreen(viewModel: DetailsViewModel, navController: NavHostController) {
 
                 composable<NavigationRoutes.SettingsRoute> {
                     SettingsScreen()
+                }
+
+                composable<NavigationRoutes.SearchRoute> {
+                    MapScreen(mapViewModel) {
+                        navController.popBackStack()
+                    }
                 }
             }
         }
