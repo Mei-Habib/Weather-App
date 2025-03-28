@@ -18,9 +18,9 @@ android {
     namespace = "com.example.weather_app"
     compileSdk = 35
 
-//    val file = File(rootProject.rootDir, "apikey.properties")
-//    val properties = Properties()
-//    properties.load(FileInputStream(file))
+    val file = File(rootProject.rootProject.rootDir, ("local.properties"))
+    val properties = Properties()
+    properties.load(FileInputStream(file))
 
 
     defaultConfig {
@@ -30,12 +30,14 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        manifestPlaceholders["MAP_API_KEY"] = project.findProperty("MAP_API_KEY") ?: ""
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
 
-//        buildConfigField("String", "MAP_API_KEY", properties.getProperty("MAP_API_KEY"))
+        buildConfigField("String", "MAP_API_KEY", properties.getProperty("MAP_API_KEY"))
+        buildConfigField("String", "API_KEY", properties.getProperty("API_KEY"))
     }
 
     buildTypes {
@@ -61,7 +63,7 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = false
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
