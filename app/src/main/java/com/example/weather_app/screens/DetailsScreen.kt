@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weather_app.R
+import com.example.weather_app.components.BottomNavBar
 import com.example.weather_app.data.remote.Response
 import com.example.weather_app.models.ForecastResponse
 import com.example.weather_app.models.WeatherDetails
@@ -60,11 +61,12 @@ import com.example.weather_app.utils.getDayFromTimestamp
 import com.example.weather_app.utils.getDaysForecast
 import com.example.weather_app.utils.getHourFormTime
 import com.example.weather_app.viewmodels.DetailsViewModel
-import com.example.weather_app.widgets.WeatherTopAppBar
+import com.example.weather_app.components.WeatherTopAppBar
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DetailsScreen(viewModel: DetailsViewModel, currentTitle: MutableState<String>) {
+    BottomNavBar.mutableNavBarState.value = true
     val locationState = viewModel.location.observeAsState()
     val weatherDetailsState = viewModel.weatherData.observeAsState()
 

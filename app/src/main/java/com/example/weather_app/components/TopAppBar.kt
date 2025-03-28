@@ -1,4 +1,4 @@
-package com.example.weather_app.widgets
+package com.example.weather_app.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
@@ -27,15 +27,18 @@ fun WeatherTopAppBar(
     titleResId: Int? = null,
     titleString: String = "",
     titleContentColor: Color = Dark,
+    shouldDisplayBack: Boolean = false,
     iconTint: Color = Dark,
     onBackClick: (() -> Unit)? = null
 ) {
     CenterAlignedTopAppBar(
 
         navigationIcon = {
-            AppBarIconButton(R.drawable.ic_back, iconTint, R.string.back_icon) {
-                if (onBackClick != null) {
-                    onBackClick()
+            if (shouldDisplayBack) {
+                AppBarIconButton(R.drawable.ic_back, iconTint, R.string.back_icon) {
+                    if (onBackClick != null) {
+                        onBackClick()
+                    }
                 }
             }
         },

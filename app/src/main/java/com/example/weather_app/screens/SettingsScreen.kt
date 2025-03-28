@@ -33,7 +33,7 @@ import com.example.weather_app.R
 import com.example.weather_app.ui.theme.Blue
 import com.example.weather_app.ui.theme.Dark
 import com.example.weather_app.ui.theme.Grey
-import com.example.weather_app.widgets.WeatherTopAppBar
+import com.example.weather_app.components.WeatherTopAppBar
 
 @Composable
 fun SettingsScreen() {

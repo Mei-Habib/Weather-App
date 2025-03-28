@@ -1,4 +1,4 @@
-package com.example.weather_app.widgets
+package com.example.weather_app.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth

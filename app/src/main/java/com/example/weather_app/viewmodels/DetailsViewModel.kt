@@ -24,9 +24,6 @@ class DetailsViewModel(
     private var _weatherData = MutableLiveData<Response<WeatherDetails>>(Response.Loading)
     val weatherData: LiveData<Response<WeatherDetails>> = _weatherData
 
-//    private var _forecastData = MutableLiveData<Response<ForecastResponse>>(Response.Loading)
-//    val forecast: LiveData<Response<ForecastResponse>> = _forecastData
-
 
     private val _message = MutableLiveData("")
     val message = _message.value
@@ -40,7 +37,6 @@ class DetailsViewModel(
             _location.postValue(loc)
             Log.i("TAG", "Location [lon: ${loc.longitude}, lat: ${loc.latitude}]")
             getWeatherDetails(loc.latitude, loc.longitude)
-//            getForecast(loc.latitude, loc.longitude)
         }
     }
 

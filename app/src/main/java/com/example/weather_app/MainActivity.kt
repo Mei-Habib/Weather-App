@@ -44,7 +44,7 @@ import com.example.weather_app.utils.ManifestUtils
 import com.example.weather_app.viewmodels.DetailsFactory
 import com.example.weather_app.viewmodels.DetailsViewModel
 import com.example.weather_app.viewmodels.MapViewModel
-import com.example.weather_app.widgets.BottomNavBar
+import com.example.weather_app.components.BottomNavBar
 import com.google.android.libraries.places.api.Places
 
 class MainActivity : ComponentActivity() {
@@ -154,7 +154,7 @@ class MainActivity : ComponentActivity() {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
-    viewModel: DetailsViewModel,
+    detailsViewModel: DetailsViewModel,
     mapViewModel: MapViewModel,
     navController: NavHostController
 ) {
@@ -175,7 +175,6 @@ fun MainScreen(
 //    }
 
     Scaffold(
-
         bottomBar = {
             when (isBottomNavBarVisible.value) {
                 true -> BottomNavBar.ShowBottomNavBar(navController)
@@ -191,7 +190,7 @@ fun MainScreen(
         ) {
             NavHost(navController = navController, startDestination = NavigationRoutes.HomeRoute) {
                 composable<NavigationRoutes.HomeRoute> {
-                    DetailsScreen(viewModel, currentTitle)
+                    DetailsScreen(detailsViewModel, currentTitle)
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {
@@ -207,7 +206,7 @@ fun MainScreen(
                 }
 
                 composable<NavigationRoutes.SearchRoute> {
-                    MapScreen(mapViewModel) {
+                    MapScreen(mapViewModel, detailsViewModel) {
                         navController.popBackStack()
                     }
                 }
