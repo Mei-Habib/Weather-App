@@ -1,8 +1,9 @@
 package com.example.weather_app.components
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -22,9 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
@@ -52,6 +53,7 @@ fun BottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     detailsViewModel.getWeatherDetails(location.latitude, location.longitude)
     val weatherState = detailsViewModel.weatherData.observeAsState()
+    val saveState = remember { mutableStateOf(false) }
 
     when (weatherState.value) {
         is Response.Loading -> {}
@@ -69,11 +71,44 @@ fun BottomSheet(
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp)
                         .fillMaxWidth()
-                        .height(168.dp),
+                        .height(200.dp)
                 ) {
-                    // Location and temperature
+
+                    if (saveState.value) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_saved),
+                            contentDescription = stringResource(
+                                R.string.save_icon
+                            ),
+                            tint = Dark,
+                            modifier = Modifier
+                                .padding(end = 12.dp)
+                                .size(30.dp)
+                                .align(Alignment.End)
+                                .clickable {
+                                    saveState.value = false
+                                    Log.i("TAG", "Place Deleted")
+                                }
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_save),
+                            contentDescription = stringResource(
+                                R.string.save_icon
+                            ),
+                            tint = Dark,
+                            modifier = Modifier
+                                .padding(end = 12.dp)
+                                .size(30.dp)
+                                .align(Alignment.End)
+                                .clickable {
+                                    saveState.value = true
+                                    Log.i("TAG", "Place Saved")
+                                },
+                        )
+                    }
                     Row(
                         modifier = Modifier
                             .padding(8.dp)
@@ -161,8 +196,8 @@ fun BottomSheet(
                             Text(
                                 text = String.format(
                                     "%.7f, %.5f",
-                                    location.latitude,
-                                    location.longitude
+                                    location.longitude,
+                                    location.latitude
                                 ),
                                 fontSize = 14.sp,
                                 color = Dark,
@@ -187,25 +222,6 @@ fun BottomSheet(
                             )
                         }
                     }
-//                    Row(
-//                        modifier = Modifier
-//                            .padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
-//                            .fillMaxWidth(),
-//                        horizontalArrangement = Arrangement.Start
-//                    ) {
-//                        Text(
-//                            text = "Longitude and latitude: ${location.latitude}, ${location.longitude}",
-//                        )
-//                    }
-//
-//                    Row(
-//                        modifier = Modifier
-//                            .padding(start = 8.dp, top = 4.dp, bottom = 8.dp)
-//                            .fillMaxWidth(),
-//                        horizontalArrangement = Arrangement.Start
-//                    ) {
-//                        Text(text = "Wind: ${weather.weather.wind.speed} mph")
-//                    }
                 }
             }
 

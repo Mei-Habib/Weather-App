@@ -25,4 +25,5 @@
     <string name="tomorrow">Tomorrow</string>
     <string name="search_for_a_place">search for a place</string>
     <string name="this_is_where_you_are_currently_located">This is where you are currently located.</string>
+    <string name="save_icon">Save Icon</string>
 </resources>
