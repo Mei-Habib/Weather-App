@@ -1,6 +1,19 @@
 import java.io.FileInputStream
 import java.util.Properties
 
+
+val localProperties = Properties()
+val localPropertiesFile = File(rootDir, "secrets.properties")
+if (localPropertiesFile.exists() && localPropertiesFile.isFile) {
+    localPropertiesFile.inputStream().use {
+        localProperties.load(it)
+    }
+}
+
+val file = File(rootProject.rootProject.rootDir, ("local.properties"))
+val properties = Properties()
+properties.load(FileInputStream(file))
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -18,11 +31,6 @@ android {
     namespace = "com.example.weather_app"
     compileSdk = 35
 
-    val file = File(rootProject.rootProject.rootDir, ("local.properties"))
-    val properties = Properties()
-    properties.load(FileInputStream(file))
-
-
     defaultConfig {
         applicationId = "com.example.weather_app"
         minSdk = 24
@@ -36,7 +44,6 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "MAP_API_KEY", properties.getProperty("MAP_API_KEY"))
         buildConfigField("String", "API_KEY", properties.getProperty("API_KEY"))
     }
 
@@ -47,10 +54,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            val googleMapsApiKey = localProperties.getProperty("MAP_API_KEY") ?: ""
+            resValue("string", "map_api_key", googleMapsApiKey)
         }
 
         debug {
-//            buildConfigField("String", "MAP_API_KEY", properties.getProperty("MAP_API_KEY"))
+            val googleMapsApiKey = localProperties.getProperty("MAP_API_KEY") ?: ""
+            resValue("string", "map_api_key", googleMapsApiKey)
         }
     }
 
