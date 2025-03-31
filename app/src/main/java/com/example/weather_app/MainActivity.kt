@@ -35,18 +35,19 @@ import com.example.weather_app.data.remote.WeatherRemoteDataSource
 import com.example.weather_app.location.LocationManager
 import com.example.weather_app.models.NavigationRoutes
 import com.example.weather_app.repository.WeatherRepository
-import com.example.weather_app.ui.screens.AlertsScreen
-import com.example.weather_app.ui.screens.DetailsScreen
-import com.example.weather_app.ui.screens.location.LocationScreen
-import com.example.weather_app.ui.screens.MapScreen
+import com.example.weather_app.ui.screens.alerts.AlertsScreen
+import com.example.weather_app.ui.screens.details.DetailsScreen
+import com.example.weather_app.ui.screens.locations.LocationScreen
+import com.example.weather_app.ui.screens.map.MapScreen
 import com.example.weather_app.ui.screens.SettingsScreen
 import com.example.weather_app.utils.ManifestUtils
-import com.example.weather_app.viewmodels.DetailsFactory
-import com.example.weather_app.viewmodels.DetailsViewModel
-import com.example.weather_app.viewmodels.MapViewModel
+import com.example.weather_app.ui.screens.details.DetailsFactory
+import com.example.weather_app.ui.screens.details.DetailsViewModel
+import com.example.weather_app.ui.screens.map.MapViewModel
 import com.example.weather_app.components.BottomNavBar
-import com.example.weather_app.ui.screens.location.LocationFactory
-import com.example.weather_app.ui.screens.location.LocationViewModel
+import com.example.weather_app.ui.screens.locations.LocationFactory
+import com.example.weather_app.ui.screens.locations.LocationViewModel
+import com.example.weather_app.ui.screens.map.MapFactory
 import com.google.android.libraries.places.api.Places
 
 class MainActivity : ComponentActivity() {
@@ -82,10 +83,17 @@ class MainActivity : ComponentActivity() {
                     WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
                 )
             )
+
+            val mapFactory = MapFactory(
+                WeatherRepository.getInstance(
+                    WeatherRemoteDataSource(RetrofitHelper.apiServices),
+                    WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
+                )
+            )
             val detailsViewModel =
                 ViewModelProvider.create(this, detailsFactory).get(DetailsViewModel::class.java)
             val mapViewModel =
-                ViewModelProvider.create(this).get(MapViewModel::class.java)
+                ViewModelProvider.create(this, mapFactory).get(MapViewModel::class.java)
             val locationViewModel =
                 ViewModelProvider.create(this, locationFactory).get(LocationViewModel::class.java)
             currentLocationState =

@@ -1,4 +1,4 @@
-package com.example.weather_app.ui.screens.location
+package com.example.weather_app.ui.screens.locations
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -48,17 +48,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weather_app.R
+import com.example.weather_app.models.FavoriteLocation
 import com.example.weather_app.ui.theme.BabyBlue
 import com.example.weather_app.ui.theme.Blue
-import kotlinx.coroutines.delay
+import com.example.weather_app.utils.CountryMapper
+import com.example.weather_app.utils.IconsMapper
 
 @Composable
-fun LocationCard(location: String, temperature: Int, condition: String, action: () -> Unit) {
+fun LocationCard(location: FavoriteLocation, action: () -> Unit) {
     val brush = Brush.horizontalGradient(listOf(Blue, BabyBlue))
 
     Row(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(12.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(brush)
             .padding(horizontal = 20.dp, vertical = 16.dp)
@@ -66,7 +68,10 @@ fun LocationCard(location: String, temperature: Int, condition: String, action: 
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(id = R.drawable.partly_cloudy),
+            painter = painterResource(
+                IconsMapper.iconsMap.get(location.weather.weather.weather.firstOrNull()?.icon)
+                    ?: R.drawable.partly_sunny
+            ),
             contentDescription = "Weather Icon",
             modifier = Modifier.size(45.dp),
             contentScale = ContentScale.Fit
@@ -76,7 +81,7 @@ fun LocationCard(location: String, temperature: Int, condition: String, action: 
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = location,
+                text = "${location.city}, ${CountryMapper.getCountryNameFromCode(location.counter)}",
                 color = Color.White,
                 fontSize = 12.sp,
                 fontFamily = FontFamily(Font(R.font.poppins_semi_bold))
@@ -85,7 +90,7 @@ fun LocationCard(location: String, temperature: Int, condition: String, action: 
             Spacer(Modifier.height(3.dp))
 
             Text(
-                text = condition,
+                text = "${location.weather.weather.weather.firstOrNull()?.description}",
                 color = Color.White,
                 fontSize = 16.sp,
                 fontFamily = FontFamily(Font(R.font.poppins_regular))
@@ -93,7 +98,7 @@ fun LocationCard(location: String, temperature: Int, condition: String, action: 
         }
 
         Text(
-            text = "$temperature°",
+            text = "${location.weather.weather.main.temp.toInt()}°",
             color = Color.White,
             fontSize = 36.sp,
             fontFamily = FontFamily(Font(R.font.poppins_light))
@@ -164,7 +169,7 @@ fun DeleteBackground(
     swipeDismissState: SwipeToDismissBoxState
 ) {
     val color = if (swipeDismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
-        Color.Red
+        Color.Red.copy(alpha = 0.5f)
     } else {
         Color.Transparent
     }
@@ -186,14 +191,4 @@ fun DeleteBackground(
         )
     }
 
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LocationCardPreview() {
-    LocationCard(
-        location = "Liverpool, United Kingdom",
-        temperature = 32,
-        condition = "Partly Cloudy"
-    ) {}
 }

@@ -1,4 +1,4 @@
-package com.example.weather_app.viewmodels
+package com.example.weather_app.ui.screens.map
 
 import android.content.Context
 import android.content.pm.PackageManager
@@ -8,19 +8,33 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.weather_app.data.remote.Response
+import com.example.weather_app.models.FavoriteLocation
+import com.example.weather_app.repository.WeatherRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MapViewModel : ViewModel() {
+class MapViewModel(private val repository: WeatherRepository) : ViewModel() {
     private val _userLocation = mutableStateOf<LatLng?>(null)
     val userLocation: State<LatLng?> = _userLocation
 
     private val _selectedLocation = mutableStateOf<LatLng?>(null)
     val selectedLocation: State<LatLng?> = _selectedLocation
+
+    private val _insertion = MutableStateFlow<Response<Boolean>?>(null)
+    val insertion = _insertion.asStateFlow()
+
+    private val _message = MutableSharedFlow<String>()
+    val message = _message.asSharedFlow()
 
     fun fetchUserLocation(context: Context, fusedLocationClient: FusedLocationProviderClient) {
         if (ContextCompat.checkSelfPermission(
@@ -57,5 +71,27 @@ class MapViewModel : ViewModel() {
                 Log.e("TAG", "No location found for the selected place.")
             }
         }
+    }
+
+    fun insertFavoriteLocation(location: FavoriteLocation) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = repository.insertFavoriteLocation(location)
+                if (result > 0) {
+                    _insertion.value = Response.Success(true)
+                } else {
+                    _insertion.value = Response.Failure(Exception("Location already exist"))
+                }
+            } catch (e: Exception) {
+                _insertion.value = Response.Failure(e)
+                _message.emit(e.message.toString())
+            }
+        }
+    }
+}
+
+class MapFactory(private val repository: WeatherRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return MapViewModel(repository) as T
     }
 }

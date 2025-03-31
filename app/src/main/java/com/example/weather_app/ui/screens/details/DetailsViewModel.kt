@@ -1,4 +1,4 @@
-package com.example.weather_app.viewmodels
+package com.example.weather_app.ui.screens.details
 
 import android.location.Location
 import android.util.Log

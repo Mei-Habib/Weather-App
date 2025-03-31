@@ -8,9 +8,9 @@ import com.google.gson.Gson
 @Entity(tableName = "favorite_table")
 data class FavoriteLocation(
     @PrimaryKey
-    val location: LatLng,
-    val counter: String,
     val city: String,
+    val latLng: LatLng,
+    val counter: String,
     val weather: WeatherDetails
 ) {
     companion object {

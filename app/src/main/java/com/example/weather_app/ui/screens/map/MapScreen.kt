@@ -1,4 +1,4 @@
-package com.example.weather_app.ui.screens
+package com.example.weather_app.ui.screens.map
 
 import android.content.pm.PackageManager
 import android.util.Log
@@ -18,15 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.weather_app.R
 import com.example.weather_app.components.BottomNavBar
 import com.example.weather_app.components.BottomSheet
 import com.example.weather_app.components.SearchBar
 import com.example.weather_app.ui.theme.Dark
 import com.example.weather_app.ui.theme.Grey
-import com.example.weather_app.viewmodels.MapViewModel
 import com.example.weather_app.components.WeatherTopAppBar
-import com.example.weather_app.viewmodels.DetailsViewModel
+import com.example.weather_app.ui.screens.details.DetailsViewModel
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.maps.android.compose.GoogleMap
@@ -54,7 +54,10 @@ fun MapScreen(mapViewModel: MapViewModel, detailsViewModel: DetailsViewModel, ac
     val selectedLocation by mapViewModel.selectedLocation
 //    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 //    val coroutineScope = rememberCoroutineScope()
-    var showBottomSheet = remember { mutableStateOf(false) }
+    val showBottomSheet = remember { mutableStateOf(false) }
+
+    // insertion
+    val insertionState = mapViewModel.insertion.collectAsStateWithLifecycle()
 
 // Request the location permission when the composable is launched
     LaunchedEffect(Unit) {
@@ -122,7 +125,14 @@ fun MapScreen(mapViewModel: MapViewModel, detailsViewModel: DetailsViewModel, ac
             }
 
             if (showBottomSheet.value) {
-                selectedLocation?.let { BottomSheet(detailsViewModel, showBottomSheet, it) }
+                selectedLocation?.let {
+                    BottomSheet(
+                        mapViewModel,
+                        detailsViewModel,
+                        showBottomSheet,
+                        it
+                    )
+                }
             }
         }
     }

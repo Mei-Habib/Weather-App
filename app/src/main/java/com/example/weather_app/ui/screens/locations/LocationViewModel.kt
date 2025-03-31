@@ -1,6 +1,5 @@
-package com.example.weather_app.ui.screens.location
+package com.example.weather_app.ui.screens.locations
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope

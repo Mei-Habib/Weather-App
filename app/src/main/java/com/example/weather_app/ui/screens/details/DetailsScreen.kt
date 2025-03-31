@@ -1,4 +1,4 @@
-package com.example.weather_app.ui.screens
+package com.example.weather_app.ui.screens.details
 
 import android.os.Build
 import android.util.Log
@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weather_app.R
 import com.example.weather_app.components.BottomNavBar
+import com.example.weather_app.components.CustomProgressIndicator
 import com.example.weather_app.data.remote.Response
 import com.example.weather_app.models.ForecastResponse
 import com.example.weather_app.models.WeatherDetails
@@ -60,7 +61,6 @@ import com.example.weather_app.utils.getDayFormTimestamp
 import com.example.weather_app.utils.getDayFromTimestamp
 import com.example.weather_app.utils.getDaysForecast
 import com.example.weather_app.utils.getHourFormTime
-import com.example.weather_app.viewmodels.DetailsViewModel
 import com.example.weather_app.components.WeatherTopAppBar
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -108,12 +108,7 @@ fun WeatherContent(weatherDetailsState: Response<WeatherDetails>?, paddingValues
 
     when (weatherDetailsState) {
         is Response.Loading -> {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            CustomProgressIndicator()
         }
 
         is Response.Failure -> {

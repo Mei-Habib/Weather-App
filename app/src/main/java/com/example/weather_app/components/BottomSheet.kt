@@ -32,20 +32,24 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.weather_app.R
 import com.example.weather_app.data.remote.Response
+import com.example.weather_app.models.FavoriteLocation
 import com.example.weather_app.models.WeatherDetails
 import com.example.weather_app.ui.theme.Dark
 import com.example.weather_app.ui.theme.DarkGrey
 import com.example.weather_app.utils.CountryMapper
 import com.example.weather_app.utils.IconsMapper
-import com.example.weather_app.viewmodels.DetailsViewModel
+import com.example.weather_app.ui.screens.details.DetailsViewModel
+import com.example.weather_app.ui.screens.map.MapViewModel
 import com.google.android.gms.maps.model.LatLng
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomSheet(
+    mapViewModel: MapViewModel,
     detailsViewModel: DetailsViewModel,
     showBottomSheet: MutableState<Boolean>,
     location: LatLng
@@ -54,6 +58,7 @@ fun BottomSheet(
     detailsViewModel.getWeatherDetails(location.latitude, location.longitude)
     val weatherState = detailsViewModel.weatherData.observeAsState()
     val saveState = remember { mutableStateOf(false) }
+
 
     when (weatherState.value) {
         is Response.Loading -> {}
@@ -88,8 +93,7 @@ fun BottomSheet(
                                 .size(30.dp)
                                 .align(Alignment.End)
                                 .clickable {
-                                    saveState.value = false
-                                    Log.i("TAG", "Place Deleted")
+                                    // delete
                                 }
                         )
                     } else {
@@ -105,7 +109,16 @@ fun BottomSheet(
                                 .align(Alignment.End)
                                 .clickable {
                                     saveState.value = true
-                                    Log.i("TAG", "Place Saved")
+                                    mapViewModel.insertFavoriteLocation(
+                                        FavoriteLocation(
+                                            weather.weather.name,
+                                            location,
+                                            weather.weather.sys.country,
+                                            weather
+                                        )
+                                    )
+
+                                    Log.i("TAG", "Place Saved Successfully")
                                 },
                         )
                     }
