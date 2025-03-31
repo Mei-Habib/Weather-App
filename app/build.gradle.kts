@@ -165,5 +165,7 @@ dependencies {
     implementation("androidx.compose.material:material:1.5.4")
 //    ksp("androidx.room:room-compiler:2.6.1")
 
+    //Swipe
+    implementation("me.saket.swipe:swipe:1.1.1")
 
 }

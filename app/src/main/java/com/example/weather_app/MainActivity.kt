@@ -35,16 +35,18 @@ import com.example.weather_app.data.remote.WeatherRemoteDataSource
 import com.example.weather_app.location.LocationManager
 import com.example.weather_app.models.NavigationRoutes
 import com.example.weather_app.repository.WeatherRepository
-import com.example.weather_app.screens.AlertsScreen
-import com.example.weather_app.screens.DetailsScreen
-import com.example.weather_app.screens.LocationScreen
-import com.example.weather_app.screens.MapScreen
-import com.example.weather_app.screens.SettingsScreen
+import com.example.weather_app.ui.screens.AlertsScreen
+import com.example.weather_app.ui.screens.DetailsScreen
+import com.example.weather_app.ui.screens.location.LocationScreen
+import com.example.weather_app.ui.screens.MapScreen
+import com.example.weather_app.ui.screens.SettingsScreen
 import com.example.weather_app.utils.ManifestUtils
 import com.example.weather_app.viewmodels.DetailsFactory
 import com.example.weather_app.viewmodels.DetailsViewModel
 import com.example.weather_app.viewmodels.MapViewModel
 import com.example.weather_app.components.BottomNavBar
+import com.example.weather_app.ui.screens.location.LocationFactory
+import com.example.weather_app.ui.screens.location.LocationViewModel
 import com.google.android.libraries.places.api.Places
 
 class MainActivity : ComponentActivity() {
@@ -74,14 +76,22 @@ class MainActivity : ComponentActivity() {
                 ), locationManager
             )
 
+            val locationFactory = LocationFactory(
+                WeatherRepository.getInstance(
+                    WeatherRemoteDataSource(RetrofitHelper.apiServices),
+                    WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
+                )
+            )
             val detailsViewModel =
                 ViewModelProvider.create(this, detailsFactory).get(DetailsViewModel::class.java)
             val mapViewModel =
                 ViewModelProvider.create(this).get(MapViewModel::class.java)
+            val locationViewModel =
+                ViewModelProvider.create(this, locationFactory).get(LocationViewModel::class.java)
             currentLocationState =
                 remember { mutableStateOf(Location(android.location.LocationManager.GPS_PROVIDER)) }
             val navController = rememberNavController()
-            MainScreen(detailsViewModel, mapViewModel, navController)
+            MainScreen(detailsViewModel, mapViewModel, locationViewModel, navController)
 
         }
     }
@@ -156,6 +166,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(
     detailsViewModel: DetailsViewModel,
     mapViewModel: MapViewModel,
+    locationViewModel: LocationViewModel,
     navController: NavHostController
 ) {
     val isBottomNavBarVisible = BottomNavBar.mutableNavBarState.observeAsState()
@@ -194,7 +205,7 @@ fun MainScreen(
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {
-                    LocationScreen { navController.navigate(NavigationRoutes.SearchRoute) }
+                    LocationScreen(locationViewModel) { navController.navigate(NavigationRoutes.SearchRoute) }
                 }
 
                 composable<NavigationRoutes.AlertsRoute> {

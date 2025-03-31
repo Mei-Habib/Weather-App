@@ -1,4 +1,4 @@
-package com.example.weather_app.screens
+package com.example.weather_app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

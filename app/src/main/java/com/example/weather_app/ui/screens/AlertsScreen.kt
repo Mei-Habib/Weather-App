@@ -1,8 +1,7 @@
-package com.example.weather_app.screens
+package com.example.weather_app.ui.screens
 
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 
 @Composable
 fun AlertsScreen() {

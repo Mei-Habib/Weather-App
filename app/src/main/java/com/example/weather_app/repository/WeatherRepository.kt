@@ -2,6 +2,8 @@ package com.example.weather_app.repository
 
 import com.example.weather_app.data.local.IWeatherLocalDataSource
 import com.example.weather_app.data.remote.IWeatherRemoteDataSource
+import com.example.weather_app.models.FavoriteLocation
+import kotlinx.coroutines.flow.Flow
 
 class WeatherRepository private constructor(
     private val remoteDataSource: IWeatherRemoteDataSource,
@@ -20,6 +22,18 @@ class WeatherRepository private constructor(
         units: String,
         lang: String
     ) = remoteDataSource.getForecast(lat, lon, units, lang)
+
+    override suspend fun getFavoriteLocations(): Flow<List<FavoriteLocation>> {
+        return localDataSource.getAllFavoriteLocations()
+    }
+
+    override suspend fun insertFavoriteLocation(location: FavoriteLocation): Long {
+        return localDataSource.insertFavoriteLocation(location)
+    }
+
+    override suspend fun deleteFavoriteLocation(location: FavoriteLocation): Int {
+        return localDataSource.deleteFavoriteLocation(location)
+    }
 
 
     companion object {
