@@ -32,7 +32,6 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.weather_app.R
 import com.example.weather_app.data.remote.Response
 import com.example.weather_app.models.FavoriteLocation

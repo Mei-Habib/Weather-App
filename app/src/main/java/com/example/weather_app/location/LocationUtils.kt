@@ -11,7 +11,6 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Looper
 import android.provider.Settings
-import androidx.activity.result.ActivityResultLauncher
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -20,22 +19,23 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 
-class LocationManager(private val context: Context) {
-    private var fusedClient: FusedLocationProviderClient =
+class LocationUtils(private val context: Context) {
+
+    private val fusedClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context)
 
-    fun hasLocationPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context, ACCESS_FINE_LOCATION
+    fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            context,
+            ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(
-                    context, ACCESS_COARSE_LOCATION
+                    context,
+                    ACCESS_COARSE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
-    }
 
     fun isLocationEnabled(): Boolean {
-        val locationManager =
-            context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
@@ -44,30 +44,24 @@ class LocationManager(private val context: Context) {
         context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
     }
 
+    fun shouldShowRationale(activity: Activity): Boolean =
+        activity.shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION) ||
+                activity.shouldShowRequestPermissionRationale(ACCESS_COARSE_LOCATION)
 
     @SuppressLint("MissingPermission")
     fun getCurrentLocation(onLocationReceived: (Location) -> Unit) {
-        val locationRequest = LocationRequest.Builder(0).apply {
-            setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-            setMaxUpdates(1) // get location once
-        }.build()
+        val locationRequest = LocationRequest.Builder(0)
+            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+            .setMaxUpdates(1)
+            .build()
 
-        fusedClient.requestLocationUpdates(
-            locationRequest,
-            object : LocationCallback() {
-                override fun onLocationResult(locationResult: LocationResult) {
-                    locationResult.lastLocation?.let {
-                        onLocationReceived(it)
-                    }
-                    fusedClient.removeLocationUpdates(this)
-                }
-            },
-            Looper.getMainLooper()
-        )
-    }
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let(onLocationReceived)
+                fusedClient.removeLocationUpdates(this)
+            }
+        }
 
-    fun shouldShowRationale(activity: Activity): Boolean {
-        return activity.shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION) ||
-                activity.shouldShowRequestPermissionRationale(ACCESS_COARSE_LOCATION)
+        fusedClient.requestLocationUpdates(locationRequest, callback, Looper.getMainLooper())
     }
 }

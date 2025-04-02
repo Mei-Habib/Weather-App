@@ -3,6 +3,7 @@ package com.example.weather_app.repository
 import com.example.weather_app.data.local.IWeatherLocalDataSource
 import com.example.weather_app.data.remote.IWeatherRemoteDataSource
 import com.example.weather_app.models.FavoriteLocation
+import com.example.weather_app.models.WeatherAlert
 import kotlinx.coroutines.flow.Flow
 
 class WeatherRepository private constructor(
@@ -33,6 +34,18 @@ class WeatherRepository private constructor(
 
     override suspend fun deleteFavoriteLocation(location: FavoriteLocation): Int {
         return localDataSource.deleteFavoriteLocation(location)
+    }
+
+    override fun insertAlert(alert: WeatherAlert): Long {
+        return localDataSource.insertAlert(alert)
+    }
+
+    override fun deleteAlert(id: Int): Int {
+        return localDataSource.deleteAlert(id)
+    }
+
+    override fun getAlerts(): Flow<List<WeatherAlert>> {
+        return localDataSource.getAlerts()
     }
 
 

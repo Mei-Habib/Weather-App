@@ -32,7 +32,7 @@ import com.example.weather_app.data.local.WeatherDatabase
 import com.example.weather_app.data.local.WeatherLocalDataSource
 import com.example.weather_app.data.remote.RetrofitHelper
 import com.example.weather_app.data.remote.WeatherRemoteDataSource
-import com.example.weather_app.location.LocationManager
+import com.example.weather_app.location.LocationUtils
 import com.example.weather_app.models.NavigationRoutes
 import com.example.weather_app.repository.WeatherRepository
 import com.example.weather_app.ui.screens.alerts.AlertsScreen
@@ -45,19 +45,33 @@ import com.example.weather_app.ui.screens.details.DetailsFactory
 import com.example.weather_app.ui.screens.details.DetailsViewModel
 import com.example.weather_app.ui.screens.map.MapViewModel
 import com.example.weather_app.components.BottomNavBar
+import com.example.weather_app.ui.screens.alerts.AlertFactory
+import com.example.weather_app.ui.screens.alerts.AlertViewModel
 import com.example.weather_app.ui.screens.locations.LocationFactory
 import com.example.weather_app.ui.screens.locations.LocationViewModel
 import com.example.weather_app.ui.screens.map.MapFactory
 import com.google.android.libraries.places.api.Places
 
 class MainActivity : ComponentActivity() {
-    private lateinit var locationManager: LocationManager
+    private lateinit var locationUtils: LocationUtils
     private lateinit var currentLocationState: MutableState<Location>
+
+    private val locationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val isGranted =
+            permissions[ACCESS_FINE_LOCATION] == true || permissions[ACCESS_COARSE_LOCATION] == true
+        if (isGranted) {
+            checkLocationAccess()
+        } else {
+            Log.w("Permission", "Location permissions denied.")
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        locationManager = LocationManager(this)
+        locationUtils = LocationUtils(this)
 
         val apiKey = ManifestUtils.getApiKeyFromManifest(this)
         if (!Places.isInitialized() && apiKey != null) {
@@ -74,7 +88,7 @@ class MainActivity : ComponentActivity() {
                     WeatherRemoteDataSource(
                         RetrofitHelper.apiServices
                     ), WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
-                ), locationManager
+                ), locationUtils
             )
 
             val locationFactory = LocationFactory(
@@ -90,16 +104,32 @@ class MainActivity : ComponentActivity() {
                     WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
                 )
             )
+
+            val alertFactory = AlertFactory(
+                WeatherRepository.getInstance(
+                    WeatherRemoteDataSource(RetrofitHelper.apiServices),
+                    WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
+                )
+            )
+
             val detailsViewModel =
                 ViewModelProvider.create(this, detailsFactory).get(DetailsViewModel::class.java)
             val mapViewModel =
                 ViewModelProvider.create(this, mapFactory).get(MapViewModel::class.java)
             val locationViewModel =
                 ViewModelProvider.create(this, locationFactory).get(LocationViewModel::class.java)
+            val alertViewModel =
+                ViewModelProvider.create(this, alertFactory).get(AlertViewModel::class.java)
             currentLocationState =
                 remember { mutableStateOf(Location(android.location.LocationManager.GPS_PROVIDER)) }
             val navController = rememberNavController()
-            MainScreen(detailsViewModel, mapViewModel, locationViewModel, navController)
+            MainScreen(
+                detailsViewModel,
+                mapViewModel,
+                locationViewModel,
+                alertViewModel,
+                navController
+            )
 
         }
     }
@@ -110,16 +140,20 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkLocationAccess() {
-        if (locationManager.hasLocationPermission()) {
-            if (locationManager.isLocationEnabled()) {
-                fetchUserLocation()
-            } else {
-                promptEnableLocationDialog()
+        when {
+            locationUtils.hasLocationPermission() -> {
+                if (locationUtils.isLocationEnabled()) {
+                    fetchUserLocation()
+                } else {
+                    promptEnableLocationDialog()
+                }
             }
-        } else {
-            if (locationManager.shouldShowRationale(this)) {
+
+            locationUtils.shouldShowRationale(this) -> {
                 showRationaleDialog()
-            } else {
+            }
+
+            else -> {
                 requestLocationPermissions()
             }
         }
@@ -132,7 +166,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun fetchUserLocation() {
-        locationManager.getCurrentLocation { location ->
+        locationUtils.getCurrentLocation { location ->
             currentLocationState.value = location
             Log.i("TAG", "Location [lon: ${location.longitude}, lat: ${location.latitude}]")
         }
@@ -151,22 +185,10 @@ class MainActivity : ComponentActivity() {
         AlertDialog.Builder(this)
             .setTitle("Enable Location Services")
             .setMessage("Please enable location services to access weather data.")
-            .setPositiveButton("Enable") { _, _ -> locationManager.promptEnableLocation() }
+            .setPositiveButton("Enable") { _, _ -> locationUtils.promptEnableLocation() }
             .setNegativeButton("Cancel", null)
             .show()
     }
-
-    private val locationLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            val isGranted = permissions[ACCESS_FINE_LOCATION] == true ||
-                    permissions[ACCESS_COARSE_LOCATION] == true
-
-            if (isGranted) {
-                checkLocationAccess() // Check location service if permission is granted
-            } else {
-                Log.w("Permission", "Location permissions denied.")
-            }
-        }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -175,6 +197,7 @@ fun MainScreen(
     detailsViewModel: DetailsViewModel,
     mapViewModel: MapViewModel,
     locationViewModel: LocationViewModel,
+    alertViewModel: AlertViewModel,
     navController: NavHostController
 ) {
     val isBottomNavBarVisible = BottomNavBar.mutableNavBarState.observeAsState()
@@ -213,18 +236,22 @@ fun MainScreen(
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {
-                    LocationScreen(locationViewModel) { navController.navigate(NavigationRoutes.SearchRoute) }
+                    LocationScreen(
+                        viewModel = locationViewModel,
+                        onSavedLocationCLick = { navController.navigate(NavigationRoutes.HomeRoute) }) {
+                        navController.navigate(NavigationRoutes.MapRoute)
+                    }
                 }
 
                 composable<NavigationRoutes.AlertsRoute> {
-                    AlertsScreen()
+                    AlertsScreen(alertViewModel)
                 }
 
                 composable<NavigationRoutes.SettingsRoute> {
                     SettingsScreen()
                 }
 
-                composable<NavigationRoutes.SearchRoute> {
+                composable<NavigationRoutes.MapRoute> {
                     MapScreen(mapViewModel, detailsViewModel) {
                         navController.popBackStack()
                     }

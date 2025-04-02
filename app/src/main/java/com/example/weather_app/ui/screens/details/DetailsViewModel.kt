@@ -8,14 +8,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weather_app.data.remote.Response
-import com.example.weather_app.location.LocationManager
+import com.example.weather_app.location.LocationUtils
 import com.example.weather_app.models.WeatherDetails
 import com.example.weather_app.repository.WeatherRepository
 import kotlinx.coroutines.launch
 
 class DetailsViewModel(
     private val repository: WeatherRepository,
-    private val locationManager: LocationManager
+    private val locationManager: LocationUtils
 ) : ViewModel() {
 
     private val _location = MutableLiveData<Location>()
@@ -58,7 +58,7 @@ class DetailsViewModel(
 
 class DetailsFactory(
     private val repository: WeatherRepository,
-    private val locationManager: LocationManager
+    private val locationManager: LocationUtils
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return DetailsViewModel(repository, locationManager) as T

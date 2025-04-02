@@ -55,7 +55,7 @@ import com.example.weather_app.utils.CountryMapper
 import com.example.weather_app.utils.IconsMapper
 
 @Composable
-fun LocationCard(location: FavoriteLocation, action: () -> Unit) {
+fun FavoriteLocationCard(location: FavoriteLocation, onSelected: (FavoriteLocation) -> Unit) {
     val brush = Brush.horizontalGradient(listOf(Blue, BabyBlue))
 
     Row(
@@ -64,7 +64,7 @@ fun LocationCard(location: FavoriteLocation, action: () -> Unit) {
             .clip(RoundedCornerShape(24.dp))
             .background(brush)
             .padding(horizontal = 20.dp, vertical = 16.dp)
-            .clickable { action.invoke() },
+            .clickable { onSelected(location) },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
@@ -116,15 +116,14 @@ fun <T> SwipeToDeleteContainer(
 ) {
     val context = LocalContext.current
     var isRemoved by remember { mutableStateOf(false) }
-    val state = rememberSwipeToDismissBoxState(
+    var showItem by remember { mutableStateOf(true) }
+    val swipeState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
                 isRemoved = true
+                showItem = false
                 true
-            } else {
-                false
-            }
-
+            } else false
         }
     )
 
@@ -138,6 +137,8 @@ fun <T> SwipeToDeleteContainer(
             )
             if (result == SnackbarResult.ActionPerformed) {
                 isRemoved = false
+                showItem = true
+                swipeState.snapTo(SwipeToDismissBoxValue.Settled)
             } else {
                 onDelete(item)
             }
@@ -151,17 +152,18 @@ fun <T> SwipeToDeleteContainer(
             animationSpec = tween(durationMillis = animationDuration)
         ) + fadeOut()
     ) {
-        SwipeToDismissBox(
-            state = state,
-            backgroundContent = {
-                DeleteBackground(swipeDismissState = state)
-            },
-            enableDismissFromStartToEnd = false
-        ) {
-            content(item)
+        if (showItem) {
+            SwipeToDismissBox(
+                state = swipeState,
+                backgroundContent = {
+                    DeleteBackground(swipeDismissState = swipeState)
+                },
+                enableDismissFromStartToEnd = false
+            ) {
+                content(item)
+            }
         }
     }
-
 }
 
 @Composable

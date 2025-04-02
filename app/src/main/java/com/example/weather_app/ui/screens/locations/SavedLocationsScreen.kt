@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -12,7 +11,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -29,18 +27,16 @@ import com.example.weather_app.ui.theme.Grey
 import com.example.weather_app.components.WeatherFloatingActionButton
 import com.example.weather_app.components.WeatherTopAppBar
 import com.example.weather_app.data.remote.Response
+import com.example.weather_app.models.FavoriteLocation.Companion.toJson
 
 
 @Composable
-fun LocationScreen(viewModel: LocationViewModel, action: () -> Unit) {
+fun LocationScreen(
+    viewModel: LocationViewModel,
+    onSavedLocationCLick: (String) -> Unit,
+    onAddLocationCLick: () -> Unit
+) {
     BottomNavBar.mutableNavBarState.value = true
-    val locations = remember {
-        mutableStateListOf(
-            "Liverpool, United Kingdom",
-            "Alexandria, Egypt",
-            "Tokyo, Japan"
-        )
-    }
     val context = LocalContext.current
     val favoriteLocations = viewModel.favoriteLocations.collectAsStateWithLifecycle()
     val message = viewModel.message
@@ -63,7 +59,7 @@ fun LocationScreen(viewModel: LocationViewModel, action: () -> Unit) {
         },
 
         floatingActionButton = {
-            WeatherFloatingActionButton(action)
+            WeatherFloatingActionButton(onAddLocationCLick)
         },
 
         containerColor = Grey,
@@ -88,30 +84,24 @@ fun LocationScreen(viewModel: LocationViewModel, action: () -> Unit) {
                 val savedLocations = (favoriteLocations.value as Response.Success).response
                 var list by remember { mutableStateOf(savedLocations) }
 
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(top = paddingValues.calculateTopPadding())
-                        .background(
-                            Grey
-                        )
-                ) {
-                    items(items = list, key = { it.city }) { loc ->
-                        SwipeToDeleteContainer(
-                            item = loc,
-                            onDelete = {
-                                list -= loc
-                            },
-                            snackbarHostState = snackbarHostState
-                        ) { location ->
-                            LocationCard(
-//                                "${location.city}, ${location.counter}",
-//                                location.weather.weather.main.temp.toInt(),
-//                                "${location.weather.weather.weather.firstOrNull()?.description}"
-                                location
-                            ) {}
+                if (list.isNullOrEmpty()) {
+                    EmptyLocationsView()
+                }
+
+                when (favoriteLocations.value) {
+                    is Response.Loading -> {}
+                    is Response.Failure -> EmptyLocationsView()
+                    is Response.Success -> {
+                        SavedLocationsListView(paddingValues, snackbarHostState, list, onDelete = {
+                            viewModel.deleteFavoriteLocation(it)
+                            list -= it
+                        }) {
+                            val gson = it.toJson()
+                            onSavedLocationCLick(gson)
                         }
                     }
                 }
+
             }
 
         }
