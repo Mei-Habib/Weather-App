@@ -130,9 +130,6 @@ dependencies {
     //Glide
     implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
 
-    //WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.7.1")
-
     //Room Database
     implementation("androidx.room:room-ktx:2.6.1")
     implementation("androidx.room:room-runtime:2.6.1")
@@ -168,5 +165,7 @@ dependencies {
 
     //Swipe
     implementation("me.saket.swipe:swipe:1.1.1")
+
+    implementation("com.google.accompanist:accompanist-permissions:0.31.1-alpha")
 
 }

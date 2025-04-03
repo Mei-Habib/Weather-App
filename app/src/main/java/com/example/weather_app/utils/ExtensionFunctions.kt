@@ -17,7 +17,6 @@ import androidx.work.WorkRequest
 import com.example.weather_app.R
 import com.example.weather_app.models.ForecastResponse
 import com.example.weather_app.receivers.AlarmReceiver
-import com.example.weather_app.receivers.StopAlarmReceiver
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Instant
@@ -83,77 +82,14 @@ fun ForecastResponse.getDaysForecast(): Map<Int, List<ForecastResponse.Item>> {
     return forecastMap.mapValues { it.value.take(8) }
 }
 
-fun String.convertArabicToEnglish(): String {
-    val arabicNumbers = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
-    val englishNumbers = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
-
-    return this.map { char ->
-        val index = arabicNumbers.indexOf(char)
-        if (index != -1) englishNumbers[index] else char
-    }.joinToString("")
-}
-
-
-fun String.convertNumbersBasedOnLocale(): String {
-    val arabicDigits = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
-    val englishDigits = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
-
-    return when (Locale.getDefault().language) {
-        "ar" -> this.map {
-            if (it.isDigit()) arabicDigits[it.digitToInt()] else it
-        }.joinToString("")
-        else -> this.map {
-            val index = arabicDigits.indexOf(it)
-            if (index != -1) englishDigits[index] else it
-        }.joinToString("")
-    }
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
-fun String.durationFromNowInSeconds(): Int {
+fun String.toMillis(): Long {
     val formatter = DateTimeFormatter.ofPattern("HH:mm")
-    val time = LocalTime.parse(this.convertArabicToEnglish(), formatter)
-    val now = LocalTime.now()
-
-    return abs(Duration.between(now, time).seconds).toInt()
+    val localTime = LocalTime.parse(this, formatter)
+    val now = LocalDate.now().atTime(localTime)
+    return now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }
 
-
-
-@SuppressLint("ScheduleExactAlarm")
-fun Context.setAlarm(seconds: Int, id: Int, duration: Int) {
-    val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-    val intent = Intent(this, AlarmReceiver::class.java)
-        .putExtra(Constants.ALARM_ID, id)
-
-    val pendingIntent = PendingIntent.getBroadcast(
-        this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val triggerTime = SystemClock.elapsedRealtime() + (seconds * 1000)
-    alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pendingIntent)
-
-    val stopIntent = Intent(this, StopAlarmReceiver::class.java)
-    val stopPendingIntent = PendingIntent.getBroadcast(
-        this, id, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val stopTime = triggerTime + (duration * 1000)
-    alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, stopTime, stopPendingIntent)
-}
-
-
-fun Context.cancelAlarm(id: Int) {
-    val alarmManager = this.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    val intent = Intent(this, AlarmReceiver::class.java)
-        .putExtra(Constants.ALARM_ID, id)
-
-    val pendingIntent = PendingIntent.getBroadcast(
-        this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-    alarmManager.cancel(pendingIntent)
-}
 
 
 

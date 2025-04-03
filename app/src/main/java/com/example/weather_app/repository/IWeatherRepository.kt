@@ -26,6 +26,7 @@ interface IWeatherRepository {
     suspend fun insertFavoriteLocation(location: FavoriteLocation): Long
 
     suspend fun deleteFavoriteLocation(location: FavoriteLocation): Int
+
     fun insertAlert(alert: WeatherAlert): Long
     fun deleteAlert(id: Int): Int
     fun getAlerts(): Flow<List<WeatherAlert>>

@@ -34,7 +34,7 @@ import com.example.weather_app.ui.theme.Blue
 @Composable
 fun AlertCard(alert: WeatherAlert) {
     val icon =
-        if (alert.type == AlertType.ALARM) Icons.Default.Alarm else Icons.Default.Notifications
+        Icons.Default.Alarm
 
     val brush = Brush.horizontalGradient(listOf(Blue, BabyBlue))
 
@@ -57,7 +57,7 @@ fun AlertCard(alert: WeatherAlert) {
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "${alert.startTime} - ${alert.endTime}",
+                text = "${alert.startDuration} - ${alert.endDuration}",
                 color = Color.White,
                 fontSize = 16.sp,
                 fontFamily = FontFamily(Font(R.font.poppins_regular))
@@ -77,5 +77,5 @@ fun AlertCard(alert: WeatherAlert) {
 @Preview
 @Composable
 private fun AlertCardPreview() {
-    AlertCard(WeatherAlert(10, "02:30 AM", "09:45 PM", AlertType.ALARM))
+    AlertCard(WeatherAlert(10, "02:30 AM", "09:45 PM"))
 }

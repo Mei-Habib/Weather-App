@@ -45,4 +45,5 @@
     <string name="it_looks_empty_here_schedule_an_alarm_to_get_started">It looks empty here. Schedule an Alarm to get started!</string>
     <string name="stop">STOP</string>
     <string name="looks_like_you_haven_t_saved_any_places_yet">Looks like you haven’t saved any places yet!</string>
+    <string name="deleted_successfully">Deleted Successfully</string>
 </resources>

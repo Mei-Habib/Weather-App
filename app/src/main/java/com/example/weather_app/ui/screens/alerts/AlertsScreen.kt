@@ -1,5 +1,6 @@
 package com.example.weather_app.ui.screens.alerts
 
+
 import android.Manifest
 import android.app.Activity
 import android.content.Context
@@ -9,6 +10,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -32,70 +34,84 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.work.WorkManager
 import com.example.weather_app.R
 import com.example.weather_app.components.AlertBottomSheet
+import com.example.weather_app.components.CustomProgressIndicator
 import com.example.weather_app.components.WeatherFloatingActionButton
 import com.example.weather_app.components.WeatherTopAppBar
+import com.example.weather_app.createWeatherNotification
 import com.example.weather_app.data.remote.Response
 import com.example.weather_app.enums.AlertType
 import com.example.weather_app.models.WeatherAlert
+import com.example.weather_app.receivers.scheduleAlarm
 import com.example.weather_app.ui.theme.Dark
 import com.example.weather_app.ui.theme.Grey
-import com.example.weather_app.utils.cancelAlarm
-import com.example.weather_app.utils.convertArabicToEnglish
-import com.example.weather_app.utils.durationFromNowInSeconds
-import com.example.weather_app.utils.setAlarm
-import kotlinx.coroutines.launch
+import com.example.weather_app.utils.toMillis
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+
 
 @RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun AlertsScreen(viewModel: AlertViewModel) {
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-
+    val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var isSheetOpen by remember { mutableStateOf(false) }
 
     val alerts = viewModel.alerts.collectAsStateWithLifecycle()
+    val message = viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
+    val workManager by lazy {
+        WorkManager.getInstance(context)
+    }
 
     val scope = rememberCoroutineScope()
+    val postNotificationPermission =
+        rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
 
-    val permission = Manifest.permission.POST_NOTIFICATIONS
-    val permissionState = remember { mutableStateOf(isPermissionGranted(context, permission)) }
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
     val permanentlyDenied = remember { mutableStateOf(false) }
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        permissionState.value = isGranted
-        if (isGranted) {
-            isSheetOpen = true
-        } else {
-            permanentlyDenied.value = !shouldShowRequestPermissionRationale(context, permission)
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = context.getString(R.string.permission_denied),
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            hasNotificationPermission = isGranted
+            if (!isGranted) {
+                permanentlyDenied.value = !shouldShowRequestPermissionRationale(
+                    context,
+                    postNotificationPermission.permission
                 )
+            } else {
+                isSheetOpen = true
             }
         }
-    }
+    )
 
-    LaunchedEffect(Unit) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            permissionState.value = isPermissionGranted(context, permission)
-
+    LaunchedEffect(key1 = true) {
+        if (!postNotificationPermission.status.isGranted) {
+            postNotificationPermission.launchPermissionRequest()
         }
     }
 
-    LaunchedEffect(Unit) { viewModel.getAlerts() }
+
+    LaunchedEffect(alerts.value) { viewModel.getAlerts() }
 
     Scaffold(
         topBar = {
@@ -112,9 +128,9 @@ fun AlertsScreen(viewModel: AlertViewModel) {
             WeatherFloatingActionButton(
                 action = {
                     when {
-                        permissionState.value -> isSheetOpen = true
+                        hasNotificationPermission -> isSheetOpen = true
                         permanentlyDenied.value -> openAppSettings(context)
-                        else -> launcher.launch(permission)
+                        else -> permissionLauncher.launch(postNotificationPermission.permission)
                     }
                 }
             )
@@ -124,7 +140,7 @@ fun AlertsScreen(viewModel: AlertViewModel) {
 
         when (alerts.value) {
             is Response.Failure -> EmptyAlarmsView()
-            Response.Loading -> CircularProgressIndicator()
+            Response.Loading -> CustomProgressIndicator()
             is Response.Success -> {
                 val data = (alerts.value as Response.Success).response
                 var list by remember { mutableStateOf(data) }
@@ -140,17 +156,8 @@ fun AlertsScreen(viewModel: AlertViewModel) {
                             )
                     ) {
                         AlertsListView(alerts = list, snackbarHostState = snackbarHostState) {
-//                            viewModel.deleteAlert(it)
+                            viewModel.deleteAlert(it)
                             list -= it
-                            when (it.type) {
-                                AlertType.ALARM -> {
-                                    context.cancelAlarm(it.id)
-                                }
-
-                                AlertType.NOTIFICATION -> {
-//                                    context.cancelNotification(it.id)
-                                }
-                            }
                         }
                     }
                 }
@@ -164,29 +171,15 @@ fun AlertsScreen(viewModel: AlertViewModel) {
             ) {
                 AlertBottomSheet(onClose = {
                     isSheetOpen = false
-                }) { startDuration, endDuration, selectedOption ->
-                    val id = System.currentTimeMillis().toInt()
+                }) { startDuration, endDuration ->
                     val alert = WeatherAlert(
-                        id = id,
-                        startTime = startDuration.convertArabicToEnglish(),
-                        endTime = endDuration.convertArabicToEnglish(),
-                        type = selectedOption
+                        startDuration = startDuration,
+                        endDuration = endDuration,
                     )
-                    val startDuration = startDuration.durationFromNowInSeconds()
-                    val endDuration = endDuration.durationFromNowInSeconds()
-                    Log.i("TAG", "Alert Scheduled within : $startDuration seconds")
-                    Log.i("TAG", "Alert Stop within : $endDuration seconds")
                     viewModel.insertAlert(alert)
-                    viewModel.getAlerts()
-                    when (selectedOption) {
-                        AlertType.ALARM -> {
-                            context.setAlarm(startDuration, id, endDuration)
-                        }
+                    viewModel.scheduleWeatherAlert(workManager, alert)
 
-                        AlertType.NOTIFICATION -> {
-//                            context.scheduleNotification(id, startDuration)
-                        }
-                    }
+                    createWeatherNotification(context, "Weather Notification")
                     isSheetOpen = false
                 }
             }
@@ -194,18 +187,10 @@ fun AlertsScreen(viewModel: AlertViewModel) {
     }
 }
 
-private fun isPermissionGranted(context: Context, permission: String): Boolean {
-    return ContextCompat.checkSelfPermission(
-        context,
-        permission
-    ) == PackageManager.PERMISSION_GRANTED
-}
-
 private fun shouldShowRequestPermissionRationale(context: Context, permission: String): Boolean {
-    return ActivityCompat.shouldShowRequestPermissionRationale(context as Activity, permission)
+    return shouldShowRequestPermissionRationale(context as Activity, permission)
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun openAppSettings(context: Context) {
     val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
         putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)

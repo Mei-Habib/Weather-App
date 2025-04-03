@@ -11,4 +11,9 @@ object Constants {
     const val LOC_LON = "loc_lon"
     const val DEFAULT_LAT = 30.9815774
     const val DEFAULT_LON = 30.6164948
+    const val NOTIFICATION_ID = 1001
+    const val CHANNEL_ID = "channel_id"
+    const val REQUEST_CODE = 0
+    const val ACTION_DISMISS = "dismiss"
+    const val ACTION_SNOOZE = "snooze"
 }

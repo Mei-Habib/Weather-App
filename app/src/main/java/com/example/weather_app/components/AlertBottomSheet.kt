@@ -2,7 +2,9 @@ package com.example.weather_app.components
 
 import android.app.TimePickerDialog
 import android.content.Context
+import android.os.Build
 import android.widget.TimePicker
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -38,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weather_app.R
@@ -46,15 +47,17 @@ import com.example.weather_app.enums.AlertType
 import com.example.weather_app.enums.AlertErrors
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AlertBottomSheet(
     onClose: () -> Unit,
     onSaved: (
         startDuration: String,
         endDuration: String,
-        selectedOption: AlertType
     ) -> Unit
 ) {
 
@@ -222,6 +225,7 @@ fun AlertBottomSheet(
             Row {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start,
                     modifier = Modifier.clickable {
                         selectedOption = AlertType.ALARM.getLocalizedValue()
                     }
@@ -232,7 +236,6 @@ fun AlertBottomSheet(
                     )
                     Text(
                         text = AlertType.ALARM.getLocalizedValue(),
-                        modifier = Modifier.padding(start = 4.dp)
                     )
                 }
 
@@ -249,7 +252,6 @@ fun AlertBottomSheet(
                     )
                     Text(
                         text = AlertType.NOTIFICATION.getLocalizedValue(),
-                        modifier = Modifier.padding(start = 4.dp)
                     )
                 }
             }
@@ -288,8 +290,7 @@ fun AlertBottomSheet(
                         AlertErrors.NO_ERROR -> {
                             onSaved(
                                 startDurationTimeState,
-                                endDurationTimeState,
-                                AlertType.getAbsoluteValue(selectedOption)
+                                endDurationTimeState
                             )
                         }
                     }
@@ -328,26 +329,24 @@ fun AlertBottomSheet(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun validation(startDuration: String, endDuration: String): AlertErrors {
-    val calendar = Calendar.getInstance()
-    val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
-    val currentMinute = calendar.get(Calendar.MINUTE)
+    return try {
+        if (startDuration.isEmpty()) return AlertErrors.START_DURATION_EMPTY
+        if (endDuration.isEmpty()) return AlertErrors.END_DURATION_EMPTY
 
-    return when {
-        startDuration.isEmpty() -> AlertErrors.START_DURATION_EMPTY
-        endDuration.isEmpty() -> AlertErrors.END_DURATION_EMPTY
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+        val start = LocalTime.parse(startDuration, formatter)
+        val end = LocalTime.parse(endDuration, formatter)
+        val now = LocalTime.now()
 
-        else -> {
-            val (startHour, startMinute) = startDuration.split(":").map { it.toInt() }
-            val (endHour, endMinute) = endDuration.split(":").map { it.toInt() }
-
-            when {
-                startHour < currentHour || (startHour == currentHour && startMinute < currentMinute) -> AlertErrors.DURATION_IN_PAST
-                endHour < currentHour || (endHour == currentHour && endMinute < currentMinute) -> AlertErrors.DURATION_IN_PAST
-                endHour < startHour || (endHour == startHour && endMinute < startMinute) -> AlertErrors.END_DURATION_BEFORE_START
-                else -> AlertErrors.NO_ERROR
-            }
+        return when {
+            start.isBefore(now) || end.isBefore(now) -> AlertErrors.DURATION_IN_PAST
+            end.isBefore(start) -> AlertErrors.END_DURATION_BEFORE_START
+            else -> AlertErrors.NO_ERROR
         }
+    } catch (e: Exception) {
+        AlertErrors.DURATION_IN_PAST
     }
 }
 
@@ -367,13 +366,7 @@ fun showTimePicker(
         },
         initialHour,
         initialMinute,
-        true
+        false
     ).show()
 }
 
-
-@Preview(locale = "es", showBackground = true, showSystemUi = true)
-@Composable
-fun PreviewAlarmBottomSheet() {
-    AlertBottomSheet({}, { s, e, se -> })
-}
