@@ -65,7 +65,7 @@ fun AlertCard(alert: WeatherAlert) {
         }
 
         Text(
-            text = "Cairo",
+            text = alert.address,
             color = Color.White,
             fontSize = 24.sp,
             fontFamily = FontFamily(Font(R.font.poppins_light))
@@ -77,5 +77,5 @@ fun AlertCard(alert: WeatherAlert) {
 @Preview
 @Composable
 private fun AlertCardPreview() {
-    AlertCard(WeatherAlert(10, "02:30 AM", "09:45 PM"))
+    AlertCard(WeatherAlert(10, "02:30 AM", "09:45 PM", "Egypt"))
 }

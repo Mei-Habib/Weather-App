@@ -2,21 +2,26 @@ package com.example.weather_app.ui.screens.alerts
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.work.Constraints
+import androidx.work.Data
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.weather_app.WeatherWorkManager
 import com.example.weather_app.data.remote.Response
+import com.example.weather_app.location.LocationUtils
 import com.example.weather_app.models.WeatherAlert
+import com.example.weather_app.models.WeatherAlert.Companion.toJson
 import com.example.weather_app.repository.WeatherRepository
 import com.example.weather_app.utils.toMillis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -29,6 +34,9 @@ class AlertViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     private val _message = MutableStateFlow<String?>(null)
     val message = _message.asStateFlow()
+
+    private val _currentAddress = MutableStateFlow("")
+    val currentAddress = _currentAddress.asStateFlow()
 
     fun getAlerts() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -65,21 +73,24 @@ class AlertViewModel(private val repository: WeatherRepository) : ViewModel() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun scheduleWeatherAlert(workManager: WorkManager, alert: WeatherAlert) {
-        val delay = alert.startDuration.toMillis()
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
+    fun loadCurrentAddress(context: Context) {
+        val locationUtils = LocationUtils(context)
 
-        val workRequest = OneTimeWorkRequestBuilder<WeatherWorkManager>()
-            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-            .setConstraints(constraints)
-            .build()
+        if (!locationUtils.hasLocationPermission()) {
+            _currentAddress.value = "Permission not granted"
+            return
+        }
 
-        workManager.enqueue(workRequest)
+        if (!locationUtils.isLocationEnabled()) {
+            _currentAddress.value = "Location is disabled"
+            return
+        }
+
+        locationUtils.getCurrentLocation { location ->
+            val address = locationUtils.getAddressFromLocation(location)
+            _currentAddress.value = address
+        }
     }
-
 }
 
 

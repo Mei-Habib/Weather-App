@@ -9,22 +9,60 @@ import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.CoroutineWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.example.weather_app.data.local.WeatherDatabase
+import com.example.weather_app.data.local.WeatherLocalDataSource
+import com.example.weather_app.data.remote.RetrofitHelper
+import com.example.weather_app.data.remote.WeatherRemoteDataSource
+import com.example.weather_app.enums.Units
+import com.example.weather_app.models.WeatherAlert
+import com.example.weather_app.models.WeatherAlert.Companion.toJson
+import com.example.weather_app.models.WeatherResponse
 import com.example.weather_app.receivers.AlarmReceiver
+import com.example.weather_app.repository.WeatherRepository
 import com.example.weather_app.utils.Constants
+import com.example.weather_app.utils.getLocationFromAddress
 
-class WeatherWorkManager(context: Context, workerParams: WorkerParameters) :
-    Worker(context, workerParams) {
-    override fun doWork(): Result {
+class WeatherWorkManager(private val context: Context, workerParams: WorkerParameters) :
+    CoroutineWorker(context, workerParams) {
+    override suspend fun doWork(): Result {
+        val data = inputData.getString("alert")
+        val alert = WeatherAlert.fromJson(data)
+        val address = alert.address
+        val latLng = getLocationFromAddress(context, address)
+        var weather: WeatherResponse? = null
+        try {
+
+            val repo = WeatherRepository.getInstance(
+                WeatherRemoteDataSource(RetrofitHelper.apiServices),
+                WeatherLocalDataSource(WeatherDatabase.getInstance(context).getWeatherDao())
+            )
+            latLng?.let {
+                weather = repo.getCurrentWeather(
+                    latLng.first,
+                    latLng.second,
+                    Units.METRIC.toString(),
+                    "en"
+                )
+            }
+
+            createWeatherNotification(context, weather, alert)
+
+        } catch (ex: Exception) {
+            Log.e("TAG", "doWork: ${ex.message}")
+            return Result.failure()
+        }
 
         return Result.success()
     }
 }
 
 @SuppressLint("LaunchActivityFromNotification")
-fun createWeatherNotification(context: Context, description: String) {
+fun createWeatherNotification(context: Context, weather: WeatherResponse?, alert: WeatherAlert) {
     val intent = Intent(context, AlarmReceiver::class.java)
     val pendingIntent = PendingIntent.getBroadcast(
         context,
@@ -33,15 +71,15 @@ fun createWeatherNotification(context: Context, description: String) {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
-    val dismissIntent = Intent(context, AlarmReceiver::class.java).apply {
-        action = Constants.ACTION_DISMISS
+    val stopIntent = Intent(context, AlarmReceiver::class.java).apply {
+        action = Constants.ACTION_STOP
         flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
     }
 
-    val dismissPendingIntent = PendingIntent.getBroadcast(
+    val stopPendingIntent = PendingIntent.getBroadcast(
         context,
         Constants.REQUEST_CODE,
-        dismissIntent,
+        stopIntent,
         PendingIntent.FLAG_IMMUTABLE
     )
 
@@ -50,6 +88,7 @@ fun createWeatherNotification(context: Context, description: String) {
         Constants.REQUEST_CODE,
         Intent(context, AlarmReceiver::class.java).apply {
             action = Constants.ACTION_SNOOZE
+            putExtra("alert", alert.toJson())
         },
         PendingIntent.FLAG_IMMUTABLE
     )
@@ -69,16 +108,19 @@ fun createWeatherNotification(context: Context, description: String) {
 
     // Notification
     val builder = NotificationCompat.Builder(context, Constants.CHANNEL_ID)
-        .setContentTitle("Weather Alert")
-        .setContentText(description)
+        .setSmallIcon(R.mipmap.ic_launcher)
+        .setContentTitle("Weather Alert: ${weather?.weather?.firstOrNull()?.description}")
+        .setContentText("Temperature: ${weather?.main?.temp}°C")
         .setFullScreenIntent(pendingIntent, true)
         .setContentIntent(pendingIntent)
-        .setSmallIcon(R.drawable.ic_weather)
+        .setAutoCancel(false)
+        .setOngoing(true)
         .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setCategory(NotificationCompat.CATEGORY_ALARM)
         .setDefaults(Notification.DEFAULT_VIBRATE)
         .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
-        .addAction(R.drawable.ic_add_alert, "Dismiss", dismissPendingIntent)
         .addAction(R.drawable.ic_add_alert, "Snooze", snoozePendingIntent)
+        .addAction(R.drawable.ic_add_alert, "Stop", stopPendingIntent)
 
 
     notificationManager.notify(Constants.NOTIFICATION_ID, builder.build())

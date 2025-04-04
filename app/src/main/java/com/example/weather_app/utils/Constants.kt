@@ -14,6 +14,6 @@ object Constants {
     const val NOTIFICATION_ID = 1001
     const val CHANNEL_ID = "channel_id"
     const val REQUEST_CODE = 0
-    const val ACTION_DISMISS = "dismiss"
+    const val ACTION_STOP = "stop"
     const val ACTION_SNOOZE = "snooze"
 }

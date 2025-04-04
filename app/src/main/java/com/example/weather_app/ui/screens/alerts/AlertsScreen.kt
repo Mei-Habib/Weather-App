@@ -46,14 +46,11 @@ import com.example.weather_app.components.AlertBottomSheet
 import com.example.weather_app.components.CustomProgressIndicator
 import com.example.weather_app.components.WeatherFloatingActionButton
 import com.example.weather_app.components.WeatherTopAppBar
-import com.example.weather_app.createWeatherNotification
 import com.example.weather_app.data.remote.Response
-import com.example.weather_app.enums.AlertType
 import com.example.weather_app.models.WeatherAlert
-import com.example.weather_app.receivers.scheduleAlarm
 import com.example.weather_app.ui.theme.Dark
 import com.example.weather_app.ui.theme.Grey
-import com.example.weather_app.utils.toMillis
+import com.example.weather_app.utils.scheduleWeatherAlert
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -111,7 +108,11 @@ fun AlertsScreen(viewModel: AlertViewModel) {
     }
 
 
-    LaunchedEffect(alerts.value) { viewModel.getAlerts() }
+    LaunchedEffect(Unit) { viewModel.getAlerts() }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentAddress(context)
+    }
 
     Scaffold(
         topBar = {
@@ -175,11 +176,11 @@ fun AlertsScreen(viewModel: AlertViewModel) {
                     val alert = WeatherAlert(
                         startDuration = startDuration,
                         endDuration = endDuration,
+                        address = viewModel.currentAddress.value
                     )
                     viewModel.insertAlert(alert)
-                    viewModel.scheduleWeatherAlert(workManager, alert)
-
-                    createWeatherNotification(context, "Weather Notification")
+                    Log.i("TAG", "AlertsScreen: ${viewModel.currentAddress.value}")
+                    scheduleWeatherAlert(workManager, alert)
                     isSheetOpen = false
                 }
             }

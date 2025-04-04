@@ -12,17 +12,32 @@ import android.media.RingtoneManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.work.Constraints
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.example.weather_app.R
+import com.example.weather_app.WeatherWorkManager
 import com.example.weather_app.enums.AlertType
+import com.example.weather_app.models.WeatherAlert
+import com.example.weather_app.models.WeatherAlert.Companion.toJson
+import com.example.weather_app.utils.formatTime
+import com.example.weather_app.utils.scheduleWeatherAlert
+import java.util.Date
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 class AlarmReceiver : BroadcastReceiver() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context?, intent: Intent?) {
         context?.let {
             when (intent?.action) {
-                Constants.ACTION_DISMISS -> {
+                Constants.ACTION_STOP -> {
                     val notificationManager =
                         context.getSystemService(NotificationManager::class.java)
 
@@ -30,9 +45,15 @@ class AlarmReceiver : BroadcastReceiver() {
                 }
 
                 Constants.ACTION_SNOOZE -> {
+                    val alertJson = intent.getStringExtra("alert")
+                    val alert = alertJson?.let { WeatherAlert.fromJson(it) }
                     val workManager = WorkManager.getInstance(context)
 
-//                    scheduleSnoozedAlert(context, workManager, weatherDetails)
+                    if (alert != null) {
+                        snoozeAlert(workManager, alert, 1, context)
+                    } else {
+
+                    }
                 }
 
                 else -> {}
@@ -42,94 +63,74 @@ class AlarmReceiver : BroadcastReceiver() {
     }
 }
 
+private fun scheduleSnooze(context: Context, triggerAtMillis: Long) {
+    val delay = triggerAtMillis - System.currentTimeMillis()
 
-// alarm manager that will trigger broadcast receiver
-fun scheduleAlarm(context: Context, startTimeInMillis: Long, alertType: AlertType) {
-    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    val intent = Intent(context, AlarmReceiver::class.java).apply {
-        putExtra("ALERT_TYPE", alertType.name)
+    val workRequest = OneTimeWorkRequestBuilder<WeatherWorkManager>()
+        .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+        .build()
+
+    WorkManager.getInstance(context).enqueue(workRequest)
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun snoozeAlert(workManager: WorkManager, alert: WeatherAlert, snoozeMinutes: Int=10, context: Context) {
+    val snoozedStartTime = System.currentTimeMillis() + snoozeMinutes * 60 * 1000
+
+    val snoozedAlert = alert.copy(
+        startDuration = snoozedStartTime.toString()
+    )
+
+    scheduleWeatherAlert(workManager, snoozedAlert)
+
+    // Update the notification with the new snooze time
+    val notificationManager = context.getSystemService(NotificationManager::class.java)
+    val snoozeNotification = NotificationCompat.Builder(context, "weather_alerts")
+        .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setContentTitle("Weather Alert Snoozed")
+        .setContentText("Alert will ring again at ${formatTime(snoozeMinutes.toLong())}")
+        .setPriority(NotificationCompat.PRIORITY_LOW)
+        .setOngoing(true) // Keep it in notifications
+        .addAction(R.drawable.ic_add_alert, "Stop", getStopIntent(context, alert.id))
+        .build()
+
+    notificationManager.notify(alert.id, snoozeNotification)
+}
+
+private fun getStopIntent(context: Context, alertId: Int): PendingIntent {
+    val stopIntent = Intent(context, AlarmReceiver::class.java).apply {
+        action = "ACTION_DISMISS"
+        putExtra("alert_id", alertId)
     }
-    val pendingIntent = PendingIntent.getBroadcast(
+    return PendingIntent.getBroadcast(
         context,
-        Constants.REQUEST_CODE,
-        intent,
+        alertId,
+        stopIntent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    alarmManager.setRepeating(
-        AlarmManager.RTC_WAKEUP,
-        startTimeInMillis,
-        AlarmManager.INTERVAL_FIFTEEN_MINUTES,
-        pendingIntent
     )
 }
 
-fun dismissNotification(context: Context) {
-    val intent = Intent(context, AlarmReceiver::class.java)
-    val pendingIntent = PendingIntent.getBroadcast(
-        context,
-        Constants.REQUEST_CODE,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-    val alarmManager = context.getSystemService(AlarmManager::class.java) as AlarmManager
-    alarmManager.cancel(pendingIntent)
-}
-
-//@SuppressLint("LaunchActivityFromNotification")
-//fun showNotification(context: Context) {
-//    val intent = Intent(context, AlarmReceiver::class.java)
-//    val pendingIntent = PendingIntent.getBroadcast(
-//        context,
-//        Constants.REQUEST_CODE,
-//        intent,
-//        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-//    )
+//fun playAlarmSoundAndVibrate(context: Context) {
+//    val ringtone = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+//    val ringtonePlayer = RingtoneManager.getRingtone(context, ringtone)
 //
-//    val stopIntent = Intent(context, StopAlertReceiver::class.java)
-//    val stopPendingIntent = PendingIntent.getBroadcast(
-//        context, 1, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-//    )
+//    // Start sound
+//    ringtonePlayer.play()
 //
-//    val notificationManager = context.getSystemService(NotificationManager::class.java)
-//    val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-//    val vibrationPattern = longArrayOf(0, 500, 200, 500)
-//    val notification =
-//        NotificationCompat.Builder(context, Constants.CHANNEL_ID)
-//            .setContentTitle("Weather Notification")
-//            .setContentText("Message or text with notification")
-//            .setSmallIcon(R.drawable.sunny)
-//            .setPriority(NotificationManager.IMPORTANCE_HIGH)
-//            .setFullScreenIntent(pendingIntent, true)
-//            .setSound(soundUri)
-//            .setVibrate(vibrationPattern)
-//            .addAction(R.drawable.ic_undo, "Dismiss", stopPendingIntent)
-//            .build()
+//    // Start vibration
+//    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+//    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//        // For Android Oreo and above, use Vibrator class with vibration pattern
+//        vibrator.vibrate(
+//            VibrationEffect.createWaveform(
+//                longArrayOf(0, 500, 200, 500),
+//                -1
+//            )
+//        ) // -1 means no repeat
+//    } else {
+//        // For older versions
+////        vibrator.vibrate(longArrayOf(0, 500, 200, 500))
+//    }
 //
-//    notificationManager.notify(Constants.NOTIFICATION_ID, notification)
+////    showNotification(context)
 //}
-
-fun playAlarmSoundAndVibrate(context: Context) {
-    val ringtone = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-    val ringtonePlayer = RingtoneManager.getRingtone(context, ringtone)
-
-    // Start sound
-    ringtonePlayer.play()
-
-    // Start vibration
-    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        // For Android Oreo and above, use Vibrator class with vibration pattern
-        vibrator.vibrate(
-            VibrationEffect.createWaveform(
-                longArrayOf(0, 500, 200, 500),
-                -1
-            )
-        ) // -1 means no repeat
-    } else {
-        // For older versions
-//        vibrator.vibrate(longArrayOf(0, 500, 200, 500))
-    }
-
-//    showNotification(context)
-}

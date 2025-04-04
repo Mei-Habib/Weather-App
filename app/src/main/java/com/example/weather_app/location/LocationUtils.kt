@@ -7,6 +7,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import android.os.Looper
@@ -18,6 +19,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import java.util.Locale
 
 class LocationUtils(private val context: Context) {
 
@@ -63,5 +65,21 @@ class LocationUtils(private val context: Context) {
         }
 
         fusedClient.requestLocationUpdates(locationRequest, callback, Looper.getMainLooper())
+    }
+
+    fun getAddressFromLocation(location: Location): String {
+        return try {
+            val geocoder = Geocoder(context, Locale.getDefault())
+            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+            if (!addresses.isNullOrEmpty()) {
+                val address = addresses[0]
+                address.countryName
+            } else {
+                "Unknown Location"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Unknown Location"
+        }
     }
 }
