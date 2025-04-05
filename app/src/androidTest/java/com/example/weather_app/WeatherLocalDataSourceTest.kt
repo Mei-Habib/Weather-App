@@ -52,7 +52,7 @@ class WeatherLocalDataSourceTest {
     }
 
     @Test
-    fun insertAlert_retrieveAlert() = runTest {
+    fun insertAlert_retrieveAlerts() = runTest {
         val alert = WeatherAlert(1, "0235", "0236", "Egypt")
         localDataSource.insertAlert(alert)
 
