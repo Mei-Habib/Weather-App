@@ -1,6 +1,5 @@
 package com.example.weather_app.enums
 
-
 enum class Languages(val value: String, val code: String) {
 
     ENGLISH("English", "en"),

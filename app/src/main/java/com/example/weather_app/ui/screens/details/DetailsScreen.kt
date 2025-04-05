@@ -147,6 +147,7 @@ fun WeatherContent(
 //            Log.i("TAG", "WeatherContent: ${settingsViewModel.temp.value}")
             Log.i("TAG", "WeatherContent: shared model temp unit  ${SharedModel.currentDegree}")
             Log.i("TAG", "WeatherContent: shared model speed unit ${SharedModel.currentSpeed}")
+            Log.i("TAG", "WeatherContent: shared model lang ${SharedModel.currentLanguage}")
 
 
             Box(

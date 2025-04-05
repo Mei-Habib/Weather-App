@@ -1,5 +1,6 @@
 package com.example.weather_app.ui.screens.settings
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.weather_app.enums.Languages
@@ -40,7 +41,8 @@ class SettingsViewModel(private val repository: WeatherRepository) : ViewModel()
         _location.value = repository.getSetting(Constants.LOCATION, Locations.GPS.enValue) ?: ""
 
         _language.value =
-            repository.getSetting(Constants.LANGUAGE_CODE, Languages.ENGLISH.value) ?: ""
+            repository.getSetting(Constants.LANGUAGE_CODE, Languages.ENGLISH.code)
+                ?: Languages.ENGLISH.code
 
     }
 
@@ -63,9 +65,9 @@ class SettingsViewModel(private val repository: WeatherRepository) : ViewModel()
         _location.value = Locations.getValue(loc)
 
         val code =
-            repository.getSetting(Constants.LANGUAGE_CODE, Locale.getDefault().language) ?: ""
+            repository.getSetting(Constants.LANGUAGE_CODE, Locale.getDefault().language)
+                ?: Languages.ENGLISH.code
         _language.value = Languages.getValueByCode(code)
-
 
     }
 
@@ -121,12 +123,17 @@ class SettingsViewModel(private val repository: WeatherRepository) : ViewModel()
         repository.saveSetting(Constants.LOCATION, location)
     }
 
-    fun updateLanguage(code: String) {
-        _language.value = code
+    fun updateLanguage(lang: String) {
+        val code = Languages.getCodeByValue(lang)
+        _language.value = lang
+        SharedModel.currentLanguage = lang
         repository.saveSetting(Constants.LANGUAGE_CODE, code)
+        Log.i("TAG", "updateLanguage: ${_language.value}")
+
     }
 
 }
+
 
 class SettingsFactory(private val repository: WeatherRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
