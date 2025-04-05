@@ -1,5 +1,6 @@
 package com.example.weather_app.ui.screens.details
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -62,10 +63,18 @@ import com.example.weather_app.utils.getDayFromTimestamp
 import com.example.weather_app.utils.getDaysForecast
 import com.example.weather_app.utils.getHourFormTime
 import com.example.weather_app.components.WeatherTopAppBar
+import com.example.weather_app.ui.screens.settings.SettingsViewModel
+import com.example.weather_app.utils.SharedModel
+import com.example.weather_app.utils.convertSpeed
+import com.example.weather_app.utils.convertTemperature
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun DetailsScreen(viewModel: DetailsViewModel, currentTitle: MutableState<String>) {
+fun DetailsScreen(
+    viewModel: DetailsViewModel,
+    settingsViewModel: SettingsViewModel,
+    currentTitle: MutableState<String>
+) {
     BottomNavBar.mutableNavBarState.value = true
     val locationState = viewModel.location.observeAsState()
     val weatherDetailsState = viewModel.weatherData.observeAsState()
@@ -98,13 +107,18 @@ fun DetailsScreen(viewModel: DetailsViewModel, currentTitle: MutableState<String
 
         containerColor = Grey
     ) { paddingValues ->
-        WeatherContent(weatherDetailsState.value, paddingValues)
+        WeatherContent(settingsViewModel, weatherDetailsState.value, paddingValues)
     }
 }
 
+@SuppressLint("StateFlowValueCalledInComposition")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun WeatherContent(weatherDetailsState: Response<WeatherDetails>?, paddingValues: PaddingValues) {
+fun WeatherContent(
+    settingsViewModel: SettingsViewModel,
+    weatherDetailsState: Response<WeatherDetails>?,
+    paddingValues: PaddingValues
+) {
 
     when (weatherDetailsState) {
         is Response.Loading -> {
@@ -130,12 +144,15 @@ fun WeatherContent(weatherDetailsState: Response<WeatherDetails>?, paddingValues
             val timestamp = weatherDetails.weather.dt
             val timezoneOffset = weatherDetails.weather.timezone
             val formattedDate = getDayFromTimestamp(timestamp, timezoneOffset)
+//            Log.i("TAG", "WeatherContent: ${settingsViewModel.temp.value}")
+            Log.i("TAG", "WeatherContent: shared model temp unit  ${SharedModel.currentDegree}")
+            Log.i("TAG", "WeatherContent: shared model speed unit ${SharedModel.currentSpeed}")
 
 
             Box(
                 Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
             ) {
                 Box(
                     contentAlignment = Alignment.TopCenter,
@@ -153,7 +170,12 @@ fun WeatherContent(weatherDetailsState: Response<WeatherDetails>?, paddingValues
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "${weatherDetails.weather.main.temp.toInt()}°",
+                                text = "${
+                                    convertTemperature(
+                                        weatherDetails.weather.main.feels_like.toInt(),
+                                        SharedModel.currentDegree
+                                    )
+                                } ${SharedModel.currentDegree}",
                                 color = Color.White,
                                 fontFamily = FontFamily(Font(R.font.poppins_bold)),
                                 fontSize = 36.sp
@@ -203,7 +225,6 @@ fun WeatherContent(weatherDetailsState: Response<WeatherDetails>?, paddingValues
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp),
-//                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val map = weatherDetails.forecast.getDaysForecast()
@@ -289,10 +310,15 @@ fun HourlyWeatherForecast(forecastItem: ForecastResponse.Item) {
         )
 
         Text(
-            text = "${forecastItem.main.temp.toInt()}",
+            text = "${
+                convertTemperature(
+                    forecastItem.main.temp.toInt(),
+                    SharedModel.currentDegree
+                )
+            } ${SharedModel.currentDegree}",
             color = Dark,
             fontFamily = FontFamily(Font(R.font.poppins_regular)),
-            fontSize = 16.sp
+            fontSize = 14.sp
         )
     }
 }
@@ -301,55 +327,59 @@ fun HourlyWeatherForecast(forecastItem: ForecastResponse.Item) {
 @Composable
 fun DailyWeatherForecast(dailyList: List<ForecastResponse.Item>) {
     val context = LocalContext.current
-    val date = getDayFormTimestamp(dailyList.get(0).dt, context)
-    val icon = dailyList.first().weather.get(0).icon
+    val icon = dailyList.first().weather[0].icon
+    val date = getDayFormTimestamp(dailyList[0].dt, context)
 
-    var min = dailyList.get(0).main.temp_min.toInt()
-    var max = dailyList.get(0).main.temp_max.toInt()
-
+    var min = convertTemperature(dailyList[0].main.temp_min.toInt(), SharedModel.currentDegree)
+    var max = convertTemperature(dailyList[0].main.temp_max.toInt(), SharedModel.currentDegree)
 
     for (item in dailyList) {
-        min = Math.min(item.main.temp_min.toInt(), min)
-        max = Math.max(item.main.temp_max.toInt(), max)
+        min = minOf(min, convertTemperature(item.main.temp_min.toInt(), SharedModel.currentDegree))
+        max = maxOf(max, convertTemperature(item.main.temp_max.toInt(), SharedModel.currentDegree))
     }
+
     Row(
         modifier = Modifier
-            .padding(bottom = 16.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .fillMaxWidth()
+            .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        Text(
+            text = date,
+            fontSize = 14.sp,
+            fontFamily = FontFamily(Font(R.font.poppins_medium)),
+            color = Dark,
+            modifier = Modifier.width(90.dp)
+        )
 
+        Spacer(modifier = Modifier.weight(1f))
+
+        Box(
+            modifier = Modifier
+                .width(50.dp),
+            contentAlignment = Alignment.Center
         ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
-                painter = painterResource(
-                    IconsMapper.iconsMap.get(icon)
-                        ?: R.drawable.clear_sky_day
-                ),
-                contentDescription = "condition icon",
-                modifier = Modifier
-                    .padding(end = 17.dp)
-                    .size(30.dp)
-
-            )
-
-            Text(
-                text = date,
-                color = Dark,
-                fontFamily = FontFamily(Font(R.font.poppins_regular)),
-                fontSize = 14.sp
+                painter = painterResource(IconsMapper.iconsMap[icon] ?: R.drawable.clear_sky_day),
+                contentDescription = "weather icon",
+                modifier = Modifier.size(32.dp)
             )
         }
 
-        Text(
-            text = "$max°/ $min°",
-            fontFamily = FontFamily(Font(R.font.poppins_regular)),
-            fontSize = 14.sp
-        )
+        Spacer(modifier = Modifier.weight(1f))
 
+        Text(
+            text = "$min ${SharedModel.currentDegree} / $max ${SharedModel.currentDegree}",
+            fontSize = 14.sp,
+            fontFamily = FontFamily(Font(R.font.poppins_regular)),
+            color = Dark,
+            maxLines = 1
+        )
     }
 }
 
+@SuppressLint("StateFlowValueCalledInComposition", "DefaultLocale")
 @Composable
 fun WeatherDashboard(weatherDetails: WeatherDetails) {
 
@@ -363,12 +393,22 @@ fun WeatherDashboard(weatherDetails: WeatherDetails) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             WeatherCard(
                 icon = R.drawable.ic_thermometer,
-                value = "${weatherDetails.weather.main.feels_like.toInt()}°",
+                value = "${
+                    convertTemperature(
+                        weatherDetails.weather.main.temp.toInt(),
+                        SharedModel.currentDegree
+                    )
+                } ${SharedModel.currentDegree}",
                 unit = stringResource(R.string.feels_like)
             )
             WeatherCard(
                 icon = R.drawable.ic_wind,
-                value = "${weatherDetails.weather.wind.speed} mp/h",
+                value = "${
+                    String.format(
+                        "%.1f",
+                        convertSpeed(weatherDetails.weather.wind.speed, SharedModel.currentSpeed)
+                    )
+                } ${SharedModel.currentSpeed}",
                 unit = stringResource(R.string.wind_speed)
             )
         }

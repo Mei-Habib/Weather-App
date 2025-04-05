@@ -1,5 +1,6 @@
-package com.example.weather_app.ui.screens
+package com.example.weather_app.ui.screens.settings
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,34 +25,59 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.weather_app.Localization.LanguageManager
 import com.example.weather_app.R
 import com.example.weather_app.ui.theme.Blue
 import com.example.weather_app.ui.theme.Dark
 import com.example.weather_app.ui.theme.Grey
 import com.example.weather_app.components.WeatherTopAppBar
+import com.example.weather_app.enums.Languages
+import com.example.weather_app.enums.Locations
+import com.example.weather_app.enums.Speeds
+import com.example.weather_app.enums.Units
+
 
 @Composable
-fun SettingsScreen() {
-    val tempOptions = listOf("C", "K", "F")
-    val windOptions = listOf("m/s", "mil/h")
-    val locOptions = listOf("Map", "GPS")
-    val langOptions = listOf("Ar", "En", "Sys")
+fun SettingsScreen(viewModel: SettingsViewModel) {
 
+    val context = LocalContext.current
+    val selectedTemp by viewModel.temp.collectAsStateWithLifecycle()
+    val selectedWindSpeed by viewModel.windSpeed.collectAsStateWithLifecycle()
+    val selectedLanguage by viewModel.language.collectAsStateWithLifecycle()
+    val selectedLocation by viewModel.location.collectAsStateWithLifecycle()
+
+    val tempOptions = listOf(
+        Units.getDegreeByValue(Units.METRIC.value),
+        Units.getDegreeByValue(Units.STANDARD.value),
+        Units.getDegreeByValue(Units.IMPERIAL.value)
+    )
+    Log.i("TAG", "SettingsScreen: ${Units.getDegreeByValue(Units.METRIC.value)}")
+    Log.i("TAG", "SettingsScreen: ${Speeds.getDegree(Speeds.METER_PER_SECOND.degree)}")
+    val windOptions = listOf(
+        Speeds.getDegree(Speeds.METER_PER_SECOND.degree),
+        Speeds.getDegree(Speeds.MILE_PER_HOUR.degree)
+    )
+    val locOptions =
+        listOf(Locations.getValue(Locations.GPS.enValue), Locations.getValue(Locations.MAP.enValue))
+    val langOptions = listOf(Languages.ENGLISH.code, Languages.ARABIC.code)
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshValues()
+    }
     Scaffold(
         topBar = {
             WeatherTopAppBar(
                 titleResId = R.string.settings,
                 titleContentColor = Dark,
                 iconTint = Dark,
-                onBackClick = {
-                    // pop
-                }
             )
         },
 
@@ -84,7 +111,10 @@ fun SettingsScreen() {
                         fontFamily = FontFamily(Font(R.font.poppins_medium))
                     )
 
-                    MultiStateToggleButton(tempOptions) { }
+                    MultiStateToggleButton(options = tempOptions, selectedOption = selectedTemp) {
+                        viewModel.updateTemp(it)
+                        Log.i("TAG", "SettingsScreen: ${viewModel.temp.value}")
+                    }
                 }
 
                 Row(
@@ -100,7 +130,10 @@ fun SettingsScreen() {
                         fontFamily = FontFamily(Font(R.font.poppins_medium))
                     )
 
-                    MultiStateToggleButton(windOptions) { }
+                    MultiStateToggleButton(options = windOptions, selectedWindSpeed) {
+                        viewModel.updateWindSpeed(it)
+                        Log.i("TAG", "SettingsScreen: ${viewModel.windSpeed.value}")
+                    }
                 }
 
                 Row(
@@ -116,7 +149,7 @@ fun SettingsScreen() {
                         fontFamily = FontFamily(Font(R.font.poppins_medium))
                     )
 
-                    MultiStateToggleButton(locOptions) { }
+                    MultiStateToggleButton(options = locOptions, selectedLocation) { }
                 }
 
                 Row(
@@ -132,7 +165,11 @@ fun SettingsScreen() {
                         fontFamily = FontFamily(Font(R.font.poppins_medium))
                     )
 
-                    MultiStateToggleButton(langOptions) { }
+                    MultiStateToggleButton(options = langOptions, selectedLanguage) {
+                        viewModel.updateLanguage(it)
+                        Log.i("TAG", "SettingsScreen: ${viewModel.language.value}")
+//                        LanguageManager.restartActivity(context)
+                    }
                 }
 
             }
@@ -144,10 +181,9 @@ fun SettingsScreen() {
 @Composable
 fun MultiStateToggleButton(
     options: List<String>,
-    selectedIndex: Int = 0,
-    onStateChange: (Int) -> Unit
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit
 ) {
-    var currentIndex by remember { mutableStateOf(selectedIndex) }
 
     Row(
         modifier = Modifier
@@ -155,34 +191,26 @@ fun MultiStateToggleButton(
             .clip(RoundedCornerShape(20.dp))
             .background(Grey)
     ) {
-        options.forEachIndexed { index, option ->
+        options.forEachIndexed { _, option ->
+            val isSelected = option == selectedOption
             Box(
                 modifier = Modifier
                     .width(55.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(if (index == currentIndex) Blue else Grey)
+                    .background(if (isSelected) Blue else Grey)
                     .clickable {
-                        currentIndex = index
-                        onStateChange(index)
+                        onOptionSelected(option)
                     }
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = option,
-                    color = if (index == currentIndex) Color.White else Dark
+                    color = if (isSelected) Color.White else Dark
                 )
             }
         }
     }
 }
 
-@Preview
-@Composable
-fun MultiStateToggleButtonPreview() {
-    MultiStateToggleButton(
-        options = listOf("°C", "°K", "°F"),
-        onStateChange = { index -> println("Selected: $index") }
-    )
-}
 

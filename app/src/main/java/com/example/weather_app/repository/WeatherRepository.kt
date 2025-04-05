@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 class WeatherRepository private constructor(
     private val remoteDataSource: IWeatherRemoteDataSource,
-    private val localDataSource: IWeatherLocalDataSource
+    private val localDataSource: IWeatherLocalDataSource,
 ) : IWeatherRepository {
     override suspend fun getCurrentWeather(
         lat: Double,
@@ -48,12 +48,19 @@ class WeatherRepository private constructor(
         return localDataSource.getAlerts()
     }
 
+    override fun saveSetting(key: String, value: String) {
+        localDataSource.saveSetting(key, value)
+    }
+
+    override fun getSetting(key: String, defValue: String): String? {
+        return localDataSource.getSetting(key, defValue)
+    }
 
     companion object {
         private var repository: WeatherRepository? = null
         fun getInstance(
             remoteDataSource: IWeatherRemoteDataSource,
-            localDataSource: IWeatherLocalDataSource
+            localDataSource: IWeatherLocalDataSource,
         ): WeatherRepository {
 
             return repository ?: synchronized(this) {

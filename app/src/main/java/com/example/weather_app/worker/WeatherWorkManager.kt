@@ -1,4 +1,4 @@
-package com.example.weather_app
+package com.example.weather_app.worker
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -7,15 +7,17 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
-import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.example.weather_app.data.local.WeatherDatabase
+import com.example.weather_app.R
+import com.example.weather_app.data.local.room.WeatherDatabase
 import com.example.weather_app.data.local.WeatherLocalDataSource
+import com.example.weather_app.data.local.sharedpreferences.SettingsSharedPreferences
 import com.example.weather_app.data.remote.RetrofitHelper
 import com.example.weather_app.data.remote.WeatherRemoteDataSource
 import com.example.weather_app.enums.Units
@@ -39,12 +41,12 @@ class WeatherWorkManager(private val context: Context, workerParams: WorkerParam
 
             val repo = WeatherRepository.getInstance(
                 WeatherRemoteDataSource(RetrofitHelper.apiServices),
-                WeatherLocalDataSource(WeatherDatabase.getInstance(context).getWeatherDao())
+                WeatherLocalDataSource(WeatherDatabase.getInstance(context).getWeatherDao(), SettingsSharedPreferences.getInstance(context))
             )
             latLng?.let {
                 weather = repo.getCurrentWeather(
-                    latLng.first,
-                    latLng.second,
+                    Constants.DEFAULT_LAT,
+                    Constants.DEFAULT_LON,
                     Units.METRIC.toString(),
                     "en"
                 )
@@ -97,12 +99,22 @@ fun createWeatherNotification(context: Context, weather: WeatherResponse?, alert
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
         val channel =
             NotificationChannel(
                 Constants.CHANNEL_ID,
                 "Weather Alerts",
                 NotificationManager.IMPORTANCE_HIGH
-            )
+            ).apply {
+                setSound(soundUri, audioAttributes)
+                enableVibration(true)
+            }
         notificationManager.createNotificationChannel(channel)
     }
 
@@ -118,7 +130,6 @@ fun createWeatherNotification(context: Context, weather: WeatherResponse?, alert
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setCategory(NotificationCompat.CATEGORY_ALARM)
         .setDefaults(Notification.DEFAULT_VIBRATE)
-        .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
         .addAction(R.drawable.ic_add_alert, "Snooze", snoozePendingIntent)
         .addAction(R.drawable.ic_add_alert, "Stop", stopPendingIntent)
 

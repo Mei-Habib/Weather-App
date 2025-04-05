@@ -8,15 +8,36 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weather_app.data.remote.Response
+import com.example.weather_app.enums.Speeds
+import com.example.weather_app.enums.Units
 import com.example.weather_app.location.LocationUtils
 import com.example.weather_app.models.WeatherDetails
 import com.example.weather_app.repository.WeatherRepository
+import com.example.weather_app.utils.Constants
+import com.example.weather_app.utils.SharedModel
 import kotlinx.coroutines.launch
 
 class DetailsViewModel(
     private val repository: WeatherRepository,
     private val locationManager: LocationUtils
 ) : ViewModel() {
+
+    private var unit: String
+    private var speed: String
+
+    init {
+        unit = repository.getSetting(Constants.TEMP_UNIT, Units.METRIC.value) ?: Units.METRIC.value
+        SharedModel.currentDegree = Units.getDegreeByValue(unit)
+        Log.i("TAG", "shared model temp unit: ${SharedModel.currentDegree}")
+
+        speed = repository.getSetting(
+            Constants.WIND_SPEED_UNIT,
+            Speeds.METER_PER_SECOND.degree
+        ) ?: Speeds.METER_PER_SECOND.degree
+
+        SharedModel.currentSpeed = Speeds.getDegree(speed)
+        Log.i("TAG", "shared model speed unit: ${SharedModel.currentSpeed}")
+    }
 
     private val _location = MutableLiveData<Location>()
     val location: LiveData<Location> = _location
@@ -55,6 +76,7 @@ class DetailsViewModel(
         }
     }
 }
+
 
 class DetailsFactory(
     private val repository: WeatherRepository,

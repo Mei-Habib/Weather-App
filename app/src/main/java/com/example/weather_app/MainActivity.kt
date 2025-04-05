@@ -8,6 +8,7 @@ import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -28,7 +29,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.weather_app.data.local.WeatherDatabase
+import com.example.weather_app.data.local.room.WeatherDatabase
 import com.example.weather_app.data.local.WeatherLocalDataSource
 import com.example.weather_app.data.remote.RetrofitHelper
 import com.example.weather_app.data.remote.WeatherRemoteDataSource
@@ -39,17 +40,20 @@ import com.example.weather_app.ui.screens.alerts.AlertsScreen
 import com.example.weather_app.ui.screens.details.DetailsScreen
 import com.example.weather_app.ui.screens.locations.LocationScreen
 import com.example.weather_app.ui.screens.map.MapScreen
-import com.example.weather_app.ui.screens.SettingsScreen
+import com.example.weather_app.ui.screens.settings.SettingsScreen
 import com.example.weather_app.utils.ManifestUtils
 import com.example.weather_app.ui.screens.details.DetailsFactory
 import com.example.weather_app.ui.screens.details.DetailsViewModel
 import com.example.weather_app.ui.screens.map.MapViewModel
 import com.example.weather_app.components.BottomNavBar
+import com.example.weather_app.data.local.sharedpreferences.SettingsSharedPreferences
 import com.example.weather_app.ui.screens.alerts.AlertFactory
 import com.example.weather_app.ui.screens.alerts.AlertViewModel
 import com.example.weather_app.ui.screens.locations.LocationFactory
 import com.example.weather_app.ui.screens.locations.LocationViewModel
 import com.example.weather_app.ui.screens.map.MapFactory
+import com.example.weather_app.ui.screens.settings.SettingsFactory
+import com.example.weather_app.ui.screens.settings.SettingsViewModel
 import com.google.android.libraries.places.api.Places
 
 class MainActivity : ComponentActivity() {
@@ -87,28 +91,51 @@ class MainActivity : ComponentActivity() {
                 WeatherRepository.getInstance(
                     WeatherRemoteDataSource(
                         RetrofitHelper.apiServices
-                    ), WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
+                    ),
+                    WeatherLocalDataSource(
+                        WeatherDatabase.getInstance(this).getWeatherDao(),
+                        SettingsSharedPreferences.getInstance(this)
+                    )
                 ), locationUtils
             )
 
             val locationFactory = LocationFactory(
                 WeatherRepository.getInstance(
                     WeatherRemoteDataSource(RetrofitHelper.apiServices),
-                    WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
+                    WeatherLocalDataSource(
+                        WeatherDatabase.getInstance(this).getWeatherDao(),
+                        SettingsSharedPreferences.getInstance(this)
+                    )
                 )
             )
 
             val mapFactory = MapFactory(
                 WeatherRepository.getInstance(
                     WeatherRemoteDataSource(RetrofitHelper.apiServices),
-                    WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
+                    WeatherLocalDataSource(
+                        WeatherDatabase.getInstance(this).getWeatherDao(),
+                        SettingsSharedPreferences.getInstance(this)
+                    )
                 )
             )
 
             val alertFactory = AlertFactory(
                 WeatherRepository.getInstance(
                     WeatherRemoteDataSource(RetrofitHelper.apiServices),
-                    WeatherLocalDataSource(WeatherDatabase.getInstance(this).getWeatherDao())
+                    WeatherLocalDataSource(
+                        WeatherDatabase.getInstance(this).getWeatherDao(),
+                        SettingsSharedPreferences.getInstance(this)
+                    )
+                )
+            )
+
+            val settingsFactory = SettingsFactory(
+                WeatherRepository.getInstance(
+                    WeatherRemoteDataSource(RetrofitHelper.apiServices),
+                    WeatherLocalDataSource(
+                        WeatherDatabase.getInstance(this).getWeatherDao(),
+                        SettingsSharedPreferences.getInstance(this)
+                    )
                 )
             )
 
@@ -120,6 +147,9 @@ class MainActivity : ComponentActivity() {
                 ViewModelProvider.create(this, locationFactory).get(LocationViewModel::class.java)
             val alertViewModel =
                 ViewModelProvider.create(this, alertFactory).get(AlertViewModel::class.java)
+
+            val settingsViewModel =
+                ViewModelProvider.create(this, settingsFactory).get(SettingsViewModel::class.java)
             currentLocationState =
                 remember { mutableStateOf(Location(android.location.LocationManager.GPS_PROVIDER)) }
             val navController = rememberNavController()
@@ -128,6 +158,7 @@ class MainActivity : ComponentActivity() {
                 mapViewModel,
                 locationViewModel,
                 alertViewModel,
+                settingsViewModel,
                 navController
             )
 
@@ -198,6 +229,7 @@ fun MainScreen(
     mapViewModel: MapViewModel,
     locationViewModel: LocationViewModel,
     alertViewModel: AlertViewModel,
+    settingsViewModel: SettingsViewModel,
     navController: NavHostController
 ) {
     val isBottomNavBarVisible = BottomNavBar.mutableNavBarState.observeAsState()
@@ -232,7 +264,7 @@ fun MainScreen(
         ) {
             NavHost(navController = navController, startDestination = NavigationRoutes.HomeRoute) {
                 composable<NavigationRoutes.HomeRoute> {
-                    DetailsScreen(detailsViewModel, currentTitle)
+                    DetailsScreen(detailsViewModel, settingsViewModel, currentTitle)
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {
@@ -248,7 +280,7 @@ fun MainScreen(
                 }
 
                 composable<NavigationRoutes.SettingsRoute> {
-                    SettingsScreen()
+                    SettingsScreen(settingsViewModel)
                 }
 
                 composable<NavigationRoutes.MapRoute> {

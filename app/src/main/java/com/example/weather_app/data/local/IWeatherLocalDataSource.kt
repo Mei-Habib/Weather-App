@@ -12,4 +12,7 @@ interface IWeatherLocalDataSource {
     fun insertAlert(alert: WeatherAlert): Long
     fun deleteAlert(id: Int): Int
     fun getAlerts(): Flow<List<WeatherAlert>>
+
+    fun saveSetting(key: String, value: String)
+    fun getSetting(key: String, defValue: String): String?
 }

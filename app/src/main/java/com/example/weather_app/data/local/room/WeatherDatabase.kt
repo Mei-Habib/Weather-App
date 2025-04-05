@@ -1,4 +1,4 @@
-package com.example.weather_app.data.local
+package com.example.weather_app.data.local.room
 
 import android.content.Context
 import androidx.room.Database
@@ -15,7 +15,9 @@ abstract class WeatherDatabase : RoomDatabase() {
     abstract fun getWeatherDao(): WeatherDao
 
     companion object {
+        @Volatile
         private var INSTANCE: WeatherDatabase? = null
+
         fun getInstance(context: Context): WeatherDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance =

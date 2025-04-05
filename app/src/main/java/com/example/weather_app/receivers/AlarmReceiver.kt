@@ -1,36 +1,22 @@
 package com.example.weather_app.receivers
 
-import android.annotation.SuppressLint
-import android.app.AlarmManager
 import android.app.NotificationManager
 import android.app.PendingIntent
 import com.example.weather_app.utils.Constants
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.media.RingtoneManager
 import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.work.Constraints
-import androidx.work.Data
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.example.weather_app.R
-import com.example.weather_app.WeatherWorkManager
-import com.example.weather_app.enums.AlertType
+import com.example.weather_app.worker.WeatherWorkManager
 import com.example.weather_app.models.WeatherAlert
-import com.example.weather_app.models.WeatherAlert.Companion.toJson
 import com.example.weather_app.utils.formatTime
 import com.example.weather_app.utils.scheduleWeatherAlert
-import java.util.Date
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 class AlarmReceiver : BroadcastReceiver() {
     @RequiresApi(Build.VERSION_CODES.O)

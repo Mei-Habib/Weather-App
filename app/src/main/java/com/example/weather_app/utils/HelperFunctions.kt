@@ -1,6 +1,8 @@
 package com.example.weather_app.utils
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.location.Geocoder
 import android.os.Build
 import android.util.Log
@@ -11,7 +13,8 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.weather_app.R
-import com.example.weather_app.WeatherWorkManager
+import com.example.weather_app.components.BottomNavBar
+import com.example.weather_app.worker.WeatherWorkManager
 import com.example.weather_app.models.ForecastResponse
 import com.example.weather_app.models.WeatherAlert
 import com.example.weather_app.models.WeatherAlert.Companion.toJson
@@ -124,5 +127,28 @@ fun scheduleWeatherAlert(workManager: WorkManager, alert: WeatherAlert) {
     }
 }
 
+fun restartActivity(context: Context) {
+    val intent = (context as? Activity)?.intent
+    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+    (context as? Activity)?.finish()
+}
+
+fun convertTemperature(celsius: Int, unit: String): Int {
+    return when (unit) {
+        "°C", "°س" -> celsius
+        "°K", "°ك" -> (celsius + 273.15).toInt()
+        "°F", "°ف" -> ((celsius * 9 / 5) + 32)
+        else -> celsius
+    }
+}
+
+fun convertSpeed(value: Double, unit: String): Double {
+    return when (unit) {
+        "mph", "ميل/س" -> value * 2.23694
+        "m/s", "م/ث" -> value
+        else -> value
+    }
+}
 
 
