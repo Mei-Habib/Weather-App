@@ -27,12 +27,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -63,17 +66,18 @@ import com.example.weather_app.utils.getDayFromTimestamp
 import com.example.weather_app.utils.getDaysForecast
 import com.example.weather_app.utils.getHourFormTime
 import com.example.weather_app.components.WeatherTopAppBar
+import com.example.weather_app.models.FavoriteLocation
 import com.example.weather_app.ui.screens.settings.SettingsViewModel
 import com.example.weather_app.utils.SharedModel
 import com.example.weather_app.utils.convertSpeed
 import com.example.weather_app.utils.convertTemperature
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun DetailsScreen(
+fun HomeScreen(
     viewModel: DetailsViewModel,
-    settingsViewModel: SettingsViewModel,
-    currentTitle: MutableState<String>
+    currentTitle: MutableState<String>,
 ) {
     BottomNavBar.mutableNavBarState.value = true
     val locationState = viewModel.location.observeAsState()
@@ -91,7 +95,6 @@ fun DetailsScreen(
             viewModel.getWeatherDetails(loc.latitude, loc.longitude)
         }
     }
-
     Log.i("TAG", "DetailsScreen: ${weatherDetailsState.value}")
     Scaffold(
         topBar = {
@@ -107,7 +110,7 @@ fun DetailsScreen(
 
         containerColor = Grey
     ) { paddingValues ->
-        WeatherContent(settingsViewModel, weatherDetailsState.value, paddingValues)
+        WeatherContent(weatherDetailsState.value, paddingValues)
     }
 }
 
@@ -115,7 +118,6 @@ fun DetailsScreen(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun WeatherContent(
-    settingsViewModel: SettingsViewModel,
     weatherDetailsState: Response<WeatherDetails>?,
     paddingValues: PaddingValues
 ) {
@@ -415,7 +417,13 @@ fun WeatherDashboard(weatherDetails: WeatherDetails) {
         }
         Spacer(modifier = Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            WeatherCard(icon = R.drawable.ic_sun, value = "9", unit = "UV Index")
+            WeatherCard(
+                icon = R.drawable.ic_pressure,
+                value = "${weatherDetails.weather.main.pressure}",
+                unit = stringResource(
+                    R.string.pressure
+                )
+            )
             WeatherCard(
                 icon = R.drawable.ic_humidity,
                 value = "${weatherDetails.weather.main.humidity}%",
@@ -426,18 +434,11 @@ fun WeatherDashboard(weatherDetails: WeatherDetails) {
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
             WeatherCard(
-                icon = R.drawable.ic_sun,
+                icon = R.drawable.ic_cloud,
                 value = "${weatherDetails.weather.clouds.all}",
                 unit = "Clouds"
-            )
-            WeatherCard(
-                icon = R.drawable.ic_humidity,
-                value = "${weatherDetails.weather.main.humidity}%",
-                unit = stringResource(
-                    R.string.humidity
-                )
             )
         }
     }

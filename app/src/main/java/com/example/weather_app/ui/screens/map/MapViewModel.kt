@@ -7,9 +7,11 @@ import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weather_app.data.remote.Response
 import com.example.weather_app.models.FavoriteLocation
 import com.example.weather_app.repository.WeatherRepository
@@ -32,6 +34,9 @@ class MapViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     private val _insertion = MutableStateFlow<Response<Boolean>?>(null)
     val insertion = _insertion.asStateFlow()
+
+    private val _deletion = MutableStateFlow<Response<Boolean>?>(null)
+    val deletion = _deletion.asStateFlow()
 
     private val _message = MutableSharedFlow<String>()
     val message = _message.asSharedFlow()
@@ -85,6 +90,35 @@ class MapViewModel(private val repository: WeatherRepository) : ViewModel() {
             } catch (e: Exception) {
                 _insertion.value = Response.Failure(e)
                 _message.emit(e.message.toString())
+            }
+        }
+    }
+
+    fun deleteFavoriteLocation(location: FavoriteLocation) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = repository.deleteFavoriteLocation(location)
+                if (result > 0) {
+                    _deletion.value = Response.Success(true)
+                } else {
+                    _deletion.value = Response.Failure(Exception(""))
+                }
+            } catch (e: Exception) {
+                _deletion.value = Response.Failure(e)
+                _message.emit(e.message.toString())
+            }
+        }
+    }
+
+    val isLocationSaved = mutableStateOf(false)
+
+    fun checkIfLocationSaved(currentLocation: LatLng) {
+        viewModelScope.launch {
+            repository.getFavoriteLocations().collect { favList ->
+                isLocationSaved.value = favList.any {
+                    it.latLng.latitude == currentLocation.latitude &&
+                            it.latLng.longitude == currentLocation.longitude
+                }
             }
         }
     }

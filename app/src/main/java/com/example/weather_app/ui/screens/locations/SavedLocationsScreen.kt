@@ -1,9 +1,11 @@
 package com.example.weather_app.ui.screens.locations
 
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +27,7 @@ import com.example.weather_app.data.remote.Response
 import com.example.weather_app.models.FavoriteLocation.Companion.toJson
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationScreen(
     viewModel: LocationViewModel,
@@ -41,6 +44,7 @@ fun LocationScreen(
     LaunchedEffect(Unit) {
         viewModel.getFavoriteLocations()
     }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
         topBar = {

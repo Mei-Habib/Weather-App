@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,6 +45,7 @@ import com.example.weather_app.enums.Units
 import com.example.weather_app.utils.changeLanguage
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
 
@@ -71,6 +74,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     LaunchedEffect(Unit) {
         viewModel.refreshValues()
     }
+
     Scaffold(
         topBar = {
             WeatherTopAppBar(

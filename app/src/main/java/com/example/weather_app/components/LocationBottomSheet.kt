@@ -24,6 +24,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -56,7 +57,11 @@ fun BottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     detailsViewModel.getWeatherDetails(location.latitude, location.longitude)
     val weatherState = detailsViewModel.weatherData.observeAsState()
-    val saveState = remember { mutableStateOf(false) }
+    LaunchedEffect(location) {
+        mapViewModel.checkIfLocationSaved(location)
+    }
+
+    val isSaved = mapViewModel.isLocationSaved
 
 
     when (weatherState.value) {
@@ -80,7 +85,7 @@ fun BottomSheet(
                         .height(200.dp)
                 ) {
 
-                    if (saveState.value) {
+                    if (isSaved.value) {
                         Icon(
                             painter = painterResource(R.drawable.ic_saved),
                             contentDescription = stringResource(
@@ -92,7 +97,8 @@ fun BottomSheet(
                                 .size(30.dp)
                                 .align(Alignment.End)
                                 .clickable {
-                                    // delete
+//                                    isSaved.value = false
+//                                    mapViewModel.deleteFavoriteLocation()
                                 }
                         )
                     } else {
@@ -107,7 +113,7 @@ fun BottomSheet(
                                 .size(30.dp)
                                 .align(Alignment.End)
                                 .clickable {
-                                    saveState.value = true
+                                    isSaved.value = true
                                     mapViewModel.insertFavoriteLocation(
                                         FavoriteLocation(
                                             weather.weather.name,

@@ -8,7 +8,6 @@ import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -29,6 +28,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.example.weather_app.data.local.room.WeatherDatabase
 import com.example.weather_app.data.local.WeatherLocalDataSource
 import com.example.weather_app.data.remote.RetrofitHelper
@@ -37,7 +37,6 @@ import com.example.weather_app.location.LocationUtils
 import com.example.weather_app.models.NavigationRoutes
 import com.example.weather_app.repository.WeatherRepository
 import com.example.weather_app.ui.screens.alerts.AlertsScreen
-import com.example.weather_app.ui.screens.details.DetailsScreen
 import com.example.weather_app.ui.screens.locations.LocationScreen
 import com.example.weather_app.ui.screens.map.MapScreen
 import com.example.weather_app.ui.screens.settings.SettingsScreen
@@ -47,8 +46,10 @@ import com.example.weather_app.ui.screens.details.DetailsViewModel
 import com.example.weather_app.ui.screens.map.MapViewModel
 import com.example.weather_app.components.BottomNavBar
 import com.example.weather_app.data.local.sharedpreferences.SettingsSharedPreferences
+import com.example.weather_app.ui.screens.DetailsScreen
 import com.example.weather_app.ui.screens.alerts.AlertFactory
 import com.example.weather_app.ui.screens.alerts.AlertViewModel
+import com.example.weather_app.ui.screens.details.HomeScreen
 import com.example.weather_app.ui.screens.locations.LocationFactory
 import com.example.weather_app.ui.screens.locations.LocationViewModel
 import com.example.weather_app.ui.screens.map.MapFactory
@@ -264,13 +265,19 @@ fun MainScreen(
         ) {
             NavHost(navController = navController, startDestination = NavigationRoutes.HomeRoute) {
                 composable<NavigationRoutes.HomeRoute> {
-                    DetailsScreen(detailsViewModel, settingsViewModel, currentTitle)
+                    HomeScreen(detailsViewModel, currentTitle)
                 }
 
                 composable<NavigationRoutes.LocationsRoute> {
                     LocationScreen(
                         viewModel = locationViewModel,
-                        onSavedLocationCLick = { navController.navigate(NavigationRoutes.HomeRoute) }) {
+                        onSavedLocationCLick = {
+                            navController.navigate(
+                                NavigationRoutes.DetailsRoute(
+                                    it
+                                )
+                            )
+                        }) {
                         navController.navigate(NavigationRoutes.MapRoute)
                     }
                 }
@@ -285,6 +292,14 @@ fun MainScreen(
 
                 composable<NavigationRoutes.MapRoute> {
                     MapScreen(mapViewModel, detailsViewModel) {
+                        navController.popBackStack()
+                    }
+                }
+
+                composable<NavigationRoutes.DetailsRoute> { backStackEntry ->
+                    val data = backStackEntry.toRoute() as NavigationRoutes.DetailsRoute
+                    val json = data.favoriteLocation
+                    DetailsScreen(detailsViewModel, currentTitle, json) {
                         navController.popBackStack()
                     }
                 }
